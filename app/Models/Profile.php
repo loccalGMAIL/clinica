@@ -17,6 +17,7 @@ class Profile extends Model
         'agenda'        => 'Agenda',
         'cash'          => 'Caja',
         'payments'      => 'Cobros',
+        'clinical'      => 'Hist. Clínicas',
         'reports'       => 'Reportes',
         'configuration' => 'Configuración',
         'system'        => 'Sistema',

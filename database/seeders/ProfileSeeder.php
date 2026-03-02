@@ -19,6 +19,7 @@ class ProfileSeeder extends Seeder
             'agenda',
             'cash',
             'payments',
+            'clinical',
             'reports',
         ];
 

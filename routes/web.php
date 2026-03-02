@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AgendaController;
+use App\Http\Controllers\ClinicalRecordController;
 use App\Http\Controllers\SettingsCenterController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AuthController;
@@ -122,6 +123,14 @@ Route::middleware(['auth'])->group(function () {
 
     // Professional liquidation processing
     Route::post('/liquidation/process', [App\Http\Controllers\LiquidationController::class, 'processLiquidation'])->name('liquidation.process');
+
+    // Rutas de Historias Clínicas (módulo: clinical)
+    Route::middleware(['module:clinical'])->group(function () {
+        Route::get('/clinical', [ClinicalRecordController::class, 'index'])->name('clinical.index');
+        Route::post('/clinical', [ClinicalRecordController::class, 'store'])->name('clinical.store');
+        Route::get('/clinical/{record}', [ClinicalRecordController::class, 'show'])->name('clinical.show');
+        Route::delete('/clinical/{record}', [ClinicalRecordController::class, 'destroy'])->name('clinical.destroy');
+    });
 
     // Rutas de Configuración (módulo: configuration)
     Route::middleware(['module:configuration'])->group(function () {
