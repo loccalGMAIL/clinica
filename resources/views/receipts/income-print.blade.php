@@ -287,12 +287,12 @@
         <div class="header">
             <!-- Logo -->
             <div class="logo">
-                <img src="{{ asset('logo.png') }}" alt="Logo Punto Salud">
+                <img src="{{ center_image('logo', 'logo.png') }}" alt="Logo">
             </div>
 
-            <div class="clinic-info">Centro de Atención Médica</div>
-            <div class="clinic-info">Dirección: Tucumán 925, Cosquín</div>
-            <div class="clinic-info">Tel: (3541) 705-281 | Email: puntosalud94@gmail.com</div>
+            <div class="clinic-info">{{ setting('center_name', 'Centro de Atención Médica') }}</div>
+            <div class="clinic-info">Dirección: {{ setting('center_address', 'Tucumán 925, Cosquín') }}</div>
+            <div class="clinic-info">Tel: {{ setting('center_phone', '(3541) 705-281') }} | Email: {{ setting('center_email', 'puntosalud94@gmail.com') }}</div>
 
             <div class="receipt-title">RECIBO DE INGRESO</div>
             <div class="receipt-number">N° {{ $payment->receipt_number }}</div>

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AgendaController;
+use App\Http\Controllers\SettingsCenterController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -135,6 +136,10 @@ Route::middleware(['auth'])->group(function () {
 
     // Rutas de Sistema (módulo: system)
     Route::middleware(['module:system'])->group(function () {
+        // Centro médico
+        Route::get('/settings/center', [SettingsCenterController::class, 'index'])->name('settings.center');
+        Route::post('/settings/center', [SettingsCenterController::class, 'update'])->name('settings.center.update');
+
         // Gestión de perfiles
         Route::resource('profiles', ProfileController::class)->except(['create', 'edit', 'show']);
 

@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>PuntoSalud</title>
+    <title>{{ setting('center_name', 'PuntoSalud') }}</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
@@ -25,9 +25,9 @@
             <div
                 class="relative w-full bg-gradient-to-br from-emerald-600 via-green-600 to-teal-700 flex items-center justify-center overflow-hidden">
                 <!-- Imagen de fondo difuminada -->
-                <img src="{{ url('back_login.png') }}" class="absolute inset-0 w-full h-full object-cover"
+                <img src="{{ center_image('login_bg', 'back_login.png') }}" class="absolute inset-0 w-full h-full object-cover"
                     style="filter: blur(4px);" alt="Background"
-                    onerror="console.error('Image failed to load:', this.src); this.style.display='none';">
+                    onerror="this.style.display='none';">
 
                 <!-- Overlay para difuminar y oscurecer -->
                 <div class="absolute inset-0 bg-gradient-to-br from-emerald-600/60 via-green-600/50 to-teal-700/60">
@@ -80,10 +80,10 @@
                     <!-- Logo y título -->
                     <div class="text-center mb-8">
                         <div style="display: flex; justify-content: center; align-items: center; width: 100%;">
-                            <img src="{{ asset('logo.png') }}" alt="Logo Punto Salud"
+                            <img src="{{ center_image('logo', 'logo.png') }}" alt="Logo"
                                 style="max-width:200px;max-height:200px;" />
                         </div>
-                        <p class="text-gray-600 mt-2">Sistema de Gestión Médica</p>
+                        <p class="text-gray-600 mt-2">{{ setting('center_subtitle', 'Sistema de Gestión Médica') }}</p>
                     </div>
 
                     <!-- Formulario -->
