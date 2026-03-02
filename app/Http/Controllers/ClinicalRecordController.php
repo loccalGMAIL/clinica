@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ClinicalRecord;
+use App\Models\Patient;
 use App\Models\Professional;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,48 +13,64 @@ class ClinicalRecordController extends Controller
 {
     public function index(Request $request)
     {
+        $professionals = Professional::active()->orderBy('last_name')->orderBy('first_name')->get();
 
-        $query = ClinicalRecord::with(['patient', 'professional', 'creator'])
-            ->ordered();
+        // Obtener IDs de pacientes que tienen registros coincidentes con los filtros
+        $patientIdQuery = ClinicalRecord::distinct()->select('patient_id');
+
+        if ($request->filled('professional_id')) {
+            $patientIdQuery->where('professional_id', $request->get('professional_id'));
+        }
+        if ($request->filled('date_from')) {
+            $patientIdQuery->where('date', '>=', $request->get('date_from'));
+        }
+        if ($request->filled('date_to')) {
+            $patientIdQuery->where('date', '<=', $request->get('date_to'));
+        }
+
+        $patientQuery = Patient::whereIn('id', $patientIdQuery)
+            ->orderBy('last_name')
+            ->orderBy('first_name');
 
         if ($request->filled('search')) {
             $search = $request->get('search');
-            $query->whereHas('patient', function ($q) use ($search) {
+            $patientQuery->where(fn ($q) =>
                 $q->where('first_name', 'like', "%{$search}%")
-                    ->orWhere('last_name', 'like', "%{$search}%")
-                    ->orWhere('dni', 'like', "%{$search}%");
-            });
+                  ->orWhere('last_name',  'like', "%{$search}%")
+                  ->orWhere('dni',        'like', "%{$search}%")
+            );
         }
 
-        if ($request->filled('professional_id')) {
-            $query->where('professional_id', $request->get('professional_id'));
-        }
+        $patients = $patientQuery->paginate(10)->withQueryString();
 
-        if ($request->filled('date_from')) {
-            $query->where('date', '>=', $request->get('date_from'));
-        }
+        // Cargar registros de los pacientes en esta página
+        $recordsByPatient = ClinicalRecord::with(['professional', 'appointment', 'creator'])
+            ->whereIn('patient_id', $patients->pluck('id'))
+            ->when($request->filled('professional_id'), fn ($q) => $q->where('professional_id', $request->get('professional_id')))
+            ->when($request->filled('date_from'), fn ($q) => $q->where('date', '>=', $request->get('date_from')))
+            ->when($request->filled('date_to'),   fn ($q) => $q->where('date', '<=', $request->get('date_to')))
+            ->ordered()
+            ->get()
+            ->groupBy('patient_id');
 
-        if ($request->filled('date_to')) {
-            $query->where('date', '<=', $request->get('date_to'));
-        }
-
-        $records = $query->paginate(20)->withQueryString();
-
-        $professionals = Professional::active()->orderBy('last_name')->orderBy('first_name')->get();
+        $patientGroups = collect($patients->items())->map(fn ($p) => [
+            'patient' => $p,
+            'records' => $recordsByPatient->get($p->id, collect())->values(),
+        ]);
 
         if ($request->ajax()) {
             return response()->json([
-                'records' => $records->items(),
-                'pagination' => [
-                    'current_page' => $records->currentPage(),
-                    'last_page'    => $records->lastPage(),
-                    'per_page'     => $records->perPage(),
-                    'total'        => $records->total(),
+                'patientGroups' => $patientGroups,
+                'pagination'    => [
+                    'current_page' => $patients->currentPage(),
+                    'last_page'    => $patients->lastPage(),
+                    'per_page'     => $patients->perPage(),
+                    'total'        => $patients->total(),
                 ],
             ]);
         }
 
-        return view('clinical.index', compact('records', 'professionals'));
+        return view('clinical.index', compact('patientGroups', 'patients', 'professionals'));
     }
 
     public function store(Request $request)

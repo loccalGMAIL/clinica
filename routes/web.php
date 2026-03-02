@@ -14,6 +14,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfessionalController;
 use App\Http\Controllers\ProfessionalAbsenceController;
 use App\Http\Controllers\ProfessionalNoteController;
+use App\Http\Controllers\ProfessionalPortalController;
 use App\Http\Controllers\ProfessionalScheduleController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SpecialtyController;
@@ -130,6 +131,28 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/clinical', [ClinicalRecordController::class, 'store'])->name('clinical.store');
         Route::get('/clinical/{record}', [ClinicalRecordController::class, 'show'])->name('clinical.show');
         Route::delete('/clinical/{record}', [ClinicalRecordController::class, 'destroy'])->name('clinical.destroy');
+    });
+
+    // Rutas de gestión de cuenta de profesional (módulo: configuration)
+    Route::middleware(['module:configuration'])->group(function () {
+        Route::get('/professionals/{professional}/account', [ProfessionalController::class, 'accountModal'])->name('professionals.account');
+        Route::post('/professionals/{professional}/account', [ProfessionalController::class, 'saveAccount'])->name('professionals.account.save');
+        Route::delete('/professionals/{professional}/account', [ProfessionalController::class, 'unlinkAccount'])->name('professionals.account.unlink');
+    });
+
+    // Portal de profesionales (módulo: professional)
+    Route::middleware(['module:professional'])->prefix('my')->name('professional.')->group(function () {
+        Route::get('/dashboard', [ProfessionalPortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('/appointments', [ProfessionalPortalController::class, 'appointments'])->name('appointments');
+        Route::get('/patients', [ProfessionalPortalController::class, 'patients'])->name('patients');
+        Route::get('/patients/{patient}', [ProfessionalPortalController::class, 'patientDetail'])->name('patient-detail');
+        Route::get('/clinical', [ProfessionalPortalController::class, 'clinical'])->name('clinical');
+        Route::post('/clinical', [ProfessionalPortalController::class, 'clinicalStore'])->name('clinical.store');
+        Route::get('/patients/{patient}/clinical', [ProfessionalPortalController::class, 'clinicalPatient'])->name('clinical.patient');
+        Route::get('/clinical/{record}', [ProfessionalPortalController::class, 'clinicalShow'])->name('clinical.show');
+        Route::get('/schedule', [ProfessionalPortalController::class, 'schedule'])->name('schedule');
+        Route::get('/liquidations', [ProfessionalPortalController::class, 'liquidations'])->name('liquidations');
+        Route::get('/absences', [ProfessionalPortalController::class, 'absences'])->name('absences');
     });
 
     // Rutas de Configuración (módulo: configuration)
