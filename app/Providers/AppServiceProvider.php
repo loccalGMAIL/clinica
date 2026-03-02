@@ -20,6 +20,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Sobreescribir app.name con el nombre del centro configurado en BD
+        try {
+            $name = app(SettingService::class)->get('center_name');
+            if ($name) {
+                config(['app.name' => $name]);
+            }
+        } catch (\Throwable) {
+            // Tabla settings aún no existe (ej: primer migrate)
+        }
     }
 }
