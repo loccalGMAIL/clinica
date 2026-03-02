@@ -7,8 +7,8 @@
     <title>@yield('title', config('app.name', 'Laravel'))</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
-    <link rel="alternate icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    @php($favicon = center_image('favicon', null))
+    @if($favicon)<link rel="icon" href="{{ $favicon }}">@endif
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>

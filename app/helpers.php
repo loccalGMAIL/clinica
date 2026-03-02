@@ -8,15 +8,15 @@ if (! function_exists('setting')) {
 }
 
 if (! function_exists('center_image')) {
-    function center_image(string $name, string $fallback): string
+    function center_image(string $name, ?string $fallback): ?string
     {
         $base = public_path("center/{$name}");
-        foreach (['png', 'jpg', 'jpeg', 'webp', 'svg'] as $ext) {
+        foreach (['png', 'jpg', 'jpeg', 'webp', 'svg', 'ico'] as $ext) {
             if (file_exists("{$base}.{$ext}")) {
                 return asset("center/{$name}.{$ext}") . '?v=' . filemtime("{$base}.{$ext}");
             }
         }
 
-        return asset($fallback);
+        return $fallback ? asset($fallback) : null;
     }
 }
