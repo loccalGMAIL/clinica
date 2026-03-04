@@ -6,6 +6,7 @@ use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Professional extends Model
 {
@@ -41,6 +42,11 @@ class Professional extends Model
     /**
      * Relaciones
      */
+    public function user(): HasOne
+    {
+        return $this->hasOne(User::class);
+    }
+
     public function specialty()
     {
         return $this->belongsTo(Specialty::class);

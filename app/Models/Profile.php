@@ -19,6 +19,7 @@ class Profile extends Model
         'payments'      => 'Cobros',
         'clinical'      => 'Hist. Clínicas',
         'reports'       => 'Reportes',
+        'professional'  => 'Portal Profesional',
         'configuration' => 'Configuración',
         'system'        => 'Sistema',
     ];

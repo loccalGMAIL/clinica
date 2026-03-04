@@ -42,5 +42,13 @@ class ProfileSeeder extends Seeder
         foreach ($generalModules as $module) {
             ProfileModule::create(['profile_id' => $general->id, 'module' => $module]);
         }
+
+        // Perfil Profesional — solo portal profesional
+        $profesional = Profile::firstOrCreate(
+            ['name' => 'Profesional'],
+            ['description' => 'Acceso al portal de profesionales del centro']
+        );
+        $profesional->modules()->delete();
+        ProfileModule::create(['profile_id' => $profesional->id, 'module' => 'professional']);
     }
 }

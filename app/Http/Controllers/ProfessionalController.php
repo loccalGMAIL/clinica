@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Profile;
 use App\Models\Professional;
 use App\Models\Specialty;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class ProfessionalController extends Controller
 {
@@ -13,7 +16,7 @@ class ProfessionalController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Professional::with('specialty')
+        $query = Professional::with(['specialty', 'user'])
             ->orderBy('last_name')
             ->orderBy('first_name');
 
@@ -290,6 +293,90 @@ class ProfessionalController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    /**
+     * Retorna JSON con el estado de cuenta del profesional
+     */
+    public function accountModal(Professional $professional)
+    {
+        $professional->load('user');
+        $user = $professional->user;
+
+        return response()->json([
+            'professional' => [
+                'id'    => $professional->id,
+                'name'  => $professional->full_name,
+                'email' => $professional->email,
+            ],
+            'has_account' => (bool) $user,
+            'account' => $user ? [
+                'id'        => $user->id,
+                'email'     => $user->email,
+                'is_active' => $user->is_active,
+            ] : null,
+        ]);
+    }
+
+    /**
+     * Crea o actualiza la cuenta de usuario vinculada al profesional
+     */
+    public function saveAccount(Request $request, Professional $professional)
+    {
+        $professional->load('user');
+
+        if (! $professional->user) {
+            // Crear nueva cuenta
+            $validated = $request->validate([
+                'email'                 => ['required', 'email', 'unique:users,email'],
+                'password'              => ['required', 'string', 'min:8', 'confirmed'],
+            ]);
+
+            $profile = Profile::where('name', 'Profesional')->first();
+
+            User::create([
+                'name'            => $professional->full_name,
+                'email'           => $validated['email'],
+                'password'        => Hash::make($validated['password']),
+                'profile_id'      => $profile?->id,
+                'professional_id' => $professional->id,
+                'is_active'       => true,
+            ]);
+
+            return response()->json(['success' => true, 'message' => 'Cuenta creada exitosamente.']);
+        }
+
+        // Actualizar cuenta existente
+        $user = $professional->user;
+
+        if ($request->filled('password')) {
+            $request->validate([
+                'password' => ['string', 'min:8', 'confirmed'],
+            ]);
+            $user->update(['password' => Hash::make($request->password)]);
+        }
+
+        if ($request->has('is_active')) {
+            $user->update(['is_active' => $request->boolean('is_active')]);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Cuenta actualizada exitosamente.']);
+    }
+
+    /**
+     * Desvincula (sin eliminar) la cuenta del profesional
+     */
+    public function unlinkAccount(Professional $professional)
+    {
+        $professional->load('user');
+
+        if (! $professional->user) {
+            return response()->json(['success' => false, 'message' => 'Este profesional no tiene cuenta vinculada.'], 404);
+        }
+
+        $professional->user->update(['professional_id' => null]);
+
+        return response()->json(['success' => true, 'message' => 'Cuenta desvinculada correctamente.']);
     }
 
     /**

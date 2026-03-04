@@ -5,6 +5,7 @@
 
 @section('content')
 <div class="flex h-full flex-1 flex-col gap-6 p-4" x-data="professionalsPage()">
+    @include('professionals.partials.modal-account')
     
     <!-- Header con estad�sticas -->
     <div class="flex flex-col gap-4">
@@ -241,13 +242,14 @@
                                 <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-tight">Tel.</th>
                                 <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-tight">Com.</th>
                                 <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-tight">Estado</th>
+                                <th class="px-2 py-2 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-tight">Acceso</th>
                                 <th class="px-2 py-2 text-right text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-tight">Acc.</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-emerald-200/30 dark:divide-emerald-800/30">
                             <!-- Estado vac�o -->
                             <tr x-show="filteredProfessionals.length === 0">
-                                <td colspan="7" class="px-6 py-12 text-center">
+                                <td colspan="8" class="px-6 py-12 text-center">
                                     <div class="flex flex-col items-center gap-3">
                                         <svg class="w-12 h-12 text-gray-400 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
@@ -296,9 +298,30 @@
                                         </span>
                                     </td>
 
+                                    <!-- Acceso (portal) -->
+                                    <td class="px-2 py-2 whitespace-nowrap">
+                                        <span :class="professional.user && professional.user.is_active
+                                                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                                      : (professional.user ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400')"
+                                              class="inline-flex px-1.5 py-0.5 text-xs font-medium rounded"
+                                              x-text="professional.user && professional.user.is_active ? 'Con acceso' : (professional.user ? 'Desactivado' : 'Sin acceso')">
+                                        </span>
+                                    </td>
+
                                     <!-- Acciones -->
                                     <td class="px-2 py-2 text-right whitespace-nowrap">
                                         <div class="flex items-center justify-end gap-1">
+                                            <!-- Botón Gestionar acceso -->
+                                            @if(Auth::user()->canAccessModule('configuration'))
+                                            <button @click="openAccountModal(professional)"
+                                                    class="p-1 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded transition-colors"
+                                                    title="Gestionar acceso al portal">
+                                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z" />
+                                                </svg>
+                                            </button>
+                                            @endif
+
                                             <!-- Botón Horarios -->
                                             <a :href="`/professionals/${professional.id}/schedules`"
                                                class="p-1 text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded transition-colors"
@@ -363,10 +386,19 @@ function professionalsPage() {
         editingProfessional: null,
         loading: false,
         formErrors: {},
-        
+
         // Estados del modal de especialidades
         specialtyModalOpen: false,
         specialtyLoading: false,
+
+        // Estados del modal de cuenta
+        accountModalOpen: false,
+        accountLoading: false,
+        accountSaving: false,
+        accountData: { professional: null, has_account: false, account: null },
+        accountForm: { email: '', password: '', password_confirmation: '' },
+        accountErrors: {},
+        currentAccountProfessionalId: null,
         
         // Filtros
         filters: {
@@ -607,6 +639,128 @@ function professionalsPage() {
                 status: 'all'
             };
             // Los watchers se encargarán de aplicar los filtros automáticamente
+        },
+
+        async openAccountModal(professional) {
+            this.currentAccountProfessionalId = professional.id;
+            this.accountForm = { email: professional.email || '', password: '', password_confirmation: '' };
+            this.accountErrors = {};
+            this.accountData = { professional: null, has_account: false, account: null };
+            this.accountLoading = true;
+            this.accountModalOpen = true;
+
+            try {
+                const response = await fetch(`/professionals/${professional.id}/account`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                });
+                this.accountData = await response.json();
+                if (!this.accountData.has_account) {
+                    this.accountForm.email = this.accountData.professional?.email || professional.email || '';
+                }
+            } catch (error) {
+                this.showNotification('Error al cargar los datos de la cuenta', 'error');
+                this.accountModalOpen = false;
+            } finally {
+                this.accountLoading = false;
+            }
+        },
+
+        async saveAccount() {
+            this.accountSaving = true;
+            this.accountErrors = {};
+
+            try {
+                const formData = new FormData();
+                if (!this.accountData.has_account) {
+                    formData.append('email', this.accountForm.email);
+                }
+                if (this.accountForm.password) {
+                    formData.append('password', this.accountForm.password);
+                    formData.append('password_confirmation', this.accountForm.password_confirmation);
+                }
+                formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+                const response = await fetch(`/professionals/${this.currentAccountProfessionalId}/account`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    this.showNotification(result.message, 'success');
+                    this.accountModalOpen = false;
+                    this.refreshData();
+                } else if (response.status === 422 && result.errors) {
+                    this.accountErrors = {};
+                    Object.keys(result.errors).forEach(k => { this.accountErrors[k] = result.errors[k][0]; });
+                } else {
+                    this.showNotification(result.message || 'Error al guardar', 'error');
+                }
+            } catch (error) {
+                this.showNotification('Error al guardar la cuenta', 'error');
+            } finally {
+                this.accountSaving = false;
+            }
+        },
+
+        async toggleAccountActive() {
+            const newState = !this.accountData.account?.is_active;
+            this.accountSaving = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('is_active', newState ? '1' : '0');
+                formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+                const response = await fetch(`/professionals/${this.currentAccountProfessionalId}/account`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    this.accountData.account.is_active = newState;
+                    this.showNotification(result.message, 'success');
+                    this.refreshData();
+                }
+            } catch (error) {
+                this.showNotification('Error al actualizar el estado', 'error');
+            } finally {
+                this.accountSaving = false;
+            }
+        },
+
+        async unlinkAccount() {
+            if (!confirm('¿Desvincular la cuenta de este profesional? El usuario no será eliminado.')) return;
+            this.accountSaving = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('_method', 'DELETE');
+                formData.append('_token', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+
+                const response = await fetch(`/professionals/${this.currentAccountProfessionalId}/account`, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    this.showNotification(result.message, 'success');
+                    this.accountModalOpen = false;
+                    this.refreshData();
+                } else {
+                    this.showNotification(result.message || 'Error al desvincular', 'error');
+                }
+            } catch (error) {
+                this.showNotification('Error al desvincular la cuenta', 'error');
+            } finally {
+                this.accountSaving = false;
+            }
         },
         
         clearError(field) { delete this.formErrors[field]; },

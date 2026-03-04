@@ -17,6 +17,9 @@ class AuthController extends Controller
     public function showLogin()
     {
         if (Auth::check()) {
+            if (Auth::user()->isProfessional()) {
+                return redirect()->route('professional.dashboard');
+            }
             return redirect()->route('dashboard');
         }
 
@@ -38,6 +41,10 @@ class AuthController extends Controller
             $request->session()->regenerate();
 
             ActivityLog::record('login', Auth::user(), Auth::user()->name, Auth::id());
+
+            if (Auth::user()->isProfessional()) {
+                return redirect()->route('professional.dashboard');
+            }
 
             return redirect()->intended(route('dashboard'));
         }
