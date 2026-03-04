@@ -14,7 +14,7 @@
                 <div class="flex items-center justify-between gap-2">
                     <!-- Logo -->
                     <div class="flex-shrink-0">
-                        <img src="{{ asset('logo.png') }}" alt="Logo PuntoSalud"
+                        <img src="{{ asset('logo.png') }}" alt="Logo {{ setting('center_name') }}"
                             class="w-32 h-32 print:w-24 print:h-24 object-contain">
                     </div>
 
@@ -76,7 +76,7 @@
                             <span
                                 class="text-[10px] font-medium text-blue-900 dark:text-blue-200 print:text-gray-800">Saldo Final</span>
                             <span
-                                class="text-base font-bold text-blue-600 dark:text-blue-400 print:text-black print:text-sm">${{ number_format($summary['final_balance_with_zalazar'], 2) }}</span>
+                                class="text-base font-bold text-blue-600 dark:text-blue-400 print:text-black print:text-sm">${{ number_format($summary['final_balance'], 2) }}</span>
                         </p>
                     </div>
                 </div>
@@ -385,90 +385,6 @@
                     </div>
                 @endif
 
-                <!-- Desglose de Ingresos Dra. Zalazar -->
-                @if ($summary['zalazar_liquidation'] > 0 || $zalazarBalancePayments->count() > 0)
-                    <div class="mb-2 print:mb-0.5">
-                        <h5 class="report-section-title">💰 Ingresos Dra. Natalia Zalazar</h5>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-[11px] print:text-[9px] border-collapse">
-                                <thead>
-                                    <tr class="border-b border-gray-300 dark:border-gray-600 print:border-gray-400">
-                                        <th
-                                            class="text-left py-[2px] px-1 font-semibold text-gray-900 dark:text-white print:text-black">
-                                            Concepto</th>
-                                        @foreach($activePaymentMethods as $method)
-                                            <th
-                                                class="text-right py-[2px] px-1 font-semibold text-gray-900 dark:text-white print:text-black">
-                                                {{ $methodConfig[$method]['emoji'] ?? strtoupper($method) }}</th>
-                                        @endforeach
-                                        <th
-                                            class="text-right py-[2px] px-1 font-semibold text-gray-900 dark:text-white print:text-black">
-                                            Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700 print:divide-gray-400">
-                                    @if ($summary['zalazar_liquidation'] > 0)
-                                        @php
-                                            $zalazarData = $professionalIncome->firstWhere('professional_id', 1);
-                                        @endphp
-                                        <tr>
-                                            <td class="py-[1px] px-1 text-gray-900 dark:text-white print:text-black">
-                                                Liquidación de Pacientes</td>
-                                            @foreach($activePaymentMethods as $method)
-                                                <td class="py-[1px] px-1 text-right text-gray-600 dark:text-gray-400 print:text-gray-700">
-                                                    @if($zalazarData && $zalazarData[$method] > 0)${{ number_format($zalazarData[$method], 0) }}@else-@endif</td>
-                                            @endforeach
-                                            <td
-                                                class="py-[1px] px-1 text-right text-green-600 dark:text-green-400 print:text-green-700">
-                                                +${{ number_format($summary['zalazar_liquidation'], 0) }}
-                                            </td>
-                                        </tr>
-                                    @endif
-
-                                    @foreach ($zalazarBalancePayments as $movement)
-                                        @php
-                                            // Obtener payment_details del pago referenciado
-                                            $paymentDetailsBreakdown = collect();
-                                            if ($movement->reference && $movement->reference instanceof \App\Models\Payment) {
-                                                $paymentDetailsBreakdown = $movement->reference->paymentDetails->keyBy('payment_method');
-                                            }
-                                        @endphp
-                                        <tr>
-                                            <td class="py-[1px] px-1 text-gray-900 dark:text-white print:text-black">
-                                                Pago de Saldos</td>
-                                            @foreach($activePaymentMethods as $method)
-                                                <td class="py-[1px] px-1 text-right text-gray-600 dark:text-gray-400 print:text-gray-700">
-                                                    @if($paymentDetailsBreakdown->has($method))
-                                                        ${{ number_format($paymentDetailsBreakdown[$method]->amount, 0) }}
-                                                    @else
-                                                        -
-                                                    @endif
-                                                </td>
-                                            @endforeach
-                                            <td
-                                                class="py-[1px] px-1 text-right text-green-600 dark:text-green-400 print:text-green-700">
-                                                +${{ number_format($movement->amount, 0) }}
-                                            </td>
-                                        </tr>
-                                    @endforeach
-
-                                    <tr class="border-t-2 border-gray-300 dark:border-gray-500 print:border-gray-500">
-                                        <td class="py-[1px] px-1 text-right font-bold text-gray-900 dark:text-white print:text-black">
-                                            TOTAL:</td>
-                                        @foreach($activePaymentMethods as $method)
-                                            <td class="py-[1px] px-1 text-right font-bold text-gray-900 dark:text-white print:text-black">
-                                                @if($summary['zalazar_payment_breakdown'][$method] > 0)${{ number_format($summary['zalazar_payment_breakdown'][$method], 0) }}@else-@endif</td>
-                                        @endforeach
-                                        <td
-                                            class="py-[1px] px-1 text-right font-bold text-green-600 dark:text-green-400 print:text-green-700">
-                                            +${{ number_format($summary['zalazar_total_income'], 0) }}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                @endif
             </div>
 
             <!-- Pie del Reporte -->

@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ setting('center_name', 'PuntoSalud') }}</title>
+    <title>{{ setting('center_name') }}</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
@@ -160,7 +160,7 @@
                     <!-- Footer -->
                     <div class="mt-8 text-center">
                         <p class="text-xs text-gray-500">
-                            PuntoSalud v{{ config('app.version', '2.2.3') }} - &copy; {{ date('Y') }}
+                            {{ setting('center_name') }} v{{ config('app.version') }} - &copy; {{ date('Y') }}
                             - Designed by <a target="_blank" href="https://pez.com.ar">Pez</a>
                         </p>
                     </div>

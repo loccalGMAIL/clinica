@@ -756,53 +756,6 @@ class CashController extends Controller
             })
             ->values();
 
-        // Calcular liquidación de Dra. Zalazar (professional_id = 1)
-        $zalazarData = $professionalIncome->firstWhere('professional_id', 1);
-        $zalazarCommission = $zalazarData ? $zalazarData['professional_amount'] : 0;
-
-        // Obtener movimientos de "Pago de Saldos Dra. Zalazar"
-        $zalazarBalancePayments = $movements->filter(fn($m) => $m->movementType?->code === 'zalazar_balance_payment');
-        $zalazarBalanceTotal = $zalazarBalancePayments->sum('amount');
-
-        // Total de ingresos de Dra. Zalazar
-        $zalazarTotalIncome = $zalazarCommission + $zalazarBalanceTotal;
-
-        // Calcular desglose por método de pago de Dra. Zalazar
-        $zalazarPaymentBreakdown = collect([
-            'cash' => 0,
-            'transfer' => 0,
-            'debit_card' => 0,
-            'credit_card' => 0,
-            'qr' => 0,
-        ]);
-
-        // Sumar liquidación de pacientes (desde $zalazarData)
-        if ($zalazarData) {
-            $commissionPercentage = $zalazarData['commission_percentage'] / 100;
-            foreach(['cash', 'transfer', 'debit_card', 'credit_card', 'qr'] as $method) {
-                $zalazarPaymentBreakdown[$method] = ($zalazarData[$method] ?? 0) * $commissionPercentage;
-            }
-        }
-
-        // Sumar pagos de saldos (desde payment_details del pago referenciado en cash_movements)
-        foreach ($zalazarBalancePayments as $movement) {
-            // Si el movimiento tiene reference que es un Payment, usar sus payment_details
-            if ($movement->reference instanceof Payment) {
-                foreach ($movement->reference->paymentDetails as $detail) {
-                    if (isset($zalazarPaymentBreakdown[$detail->payment_method])) {
-                        $zalazarPaymentBreakdown[$detail->payment_method] += $detail->amount;
-                    }
-                }
-            }
-        }
-
-        // Agregar al summary
-        $summary['zalazar_liquidation'] = $zalazarCommission;
-        $summary['zalazar_balance_payments'] = $zalazarBalanceTotal;
-        $summary['zalazar_total_income'] = $zalazarTotalIncome;
-        $summary['final_balance_with_zalazar'] = $finalBalance + $zalazarCommission;
-        $summary['zalazar_payment_breakdown'] = $zalazarPaymentBreakdown;
-
         return view('cash.count-report', compact(
             'selectedDate',
             'summary',
@@ -810,7 +763,6 @@ class CashController extends Controller
             'movementsByType',
             'userSummary',
             'professionalIncome',
-            'zalazarBalancePayments',
             'activePaymentMethods'
         ));
     }
@@ -995,55 +947,6 @@ class CashController extends Controller
             })
             ->values();
 
-        // Calcular liquidación de Dra. Zalazar (professional_id = 1) para saldo final
-        $zalazarData = $professionalIncome->firstWhere('professional_id', 1);
-        $zalazarCommission = $zalazarData ? $zalazarData['professional_amount'] : 0;
-
-        // Obtener movimientos de "Pago de Saldos Dra. Zalazar"
-        $zalazarBalancePayments = $movements->filter(fn($m) => $m->movementType?->code === 'zalazar_balance_payment');
-        $zalazarBalanceTotal = $zalazarBalancePayments->sum('amount');
-
-        // Total de ingresos de Dra. Zalazar (liquidación + pagos de saldos)
-        // NOTA: Los pagos de saldos ya están incluidos en $finalBalance (son ingresos del día)
-        $zalazarTotalIncome = $zalazarCommission + $zalazarBalanceTotal;
-
-        // Calcular desglose por método de pago de Dra. Zalazar
-        $zalazarPaymentBreakdown = collect([
-            'cash' => 0,
-            'transfer' => 0,
-            'debit_card' => 0,
-            'credit_card' => 0,
-            'qr' => 0,
-        ]);
-
-        // Sumar liquidación de pacientes (desde $zalazarData)
-        if ($zalazarData) {
-            $commissionPercentage = $zalazarData['commission_percentage'] / 100;
-            foreach(['cash', 'transfer', 'debit_card', 'credit_card', 'qr'] as $method) {
-                $zalazarPaymentBreakdown[$method] = ($zalazarData[$method] ?? 0) * $commissionPercentage;
-            }
-        }
-
-        // Sumar pagos de saldos (desde payment_details del pago referenciado en cash_movements)
-        foreach ($zalazarBalancePayments as $movement) {
-            // Si el movimiento tiene reference que es un Payment, usar sus payment_details
-            if ($movement->reference instanceof Payment) {
-                foreach ($movement->reference->paymentDetails as $detail) {
-                    if (isset($zalazarPaymentBreakdown[$detail->payment_method])) {
-                        $zalazarPaymentBreakdown[$detail->payment_method] += $detail->amount;
-                    }
-                }
-            }
-        }
-
-        // Agregar al summary el saldo final que incluye SOLO la liquidación de Zalazar
-        // Los pagos de saldos ya están incluidos en finalBalance, por eso no se suman de nuevo
-        $summary['zalazar_liquidation'] = $zalazarCommission;
-        $summary['zalazar_balance_payments'] = $zalazarBalanceTotal;
-        $summary['zalazar_total_income'] = $zalazarTotalIncome;
-        $summary['final_balance_with_zalazar'] = $finalBalance + $zalazarCommission;
-        $summary['zalazar_payment_breakdown'] = $zalazarPaymentBreakdown;
-
         return view('cash.daily-report', compact(
             'selectedDate',
             'summary',
@@ -1051,7 +954,6 @@ class CashController extends Controller
             'movementsByType',
             'userSummary',
             'professionalIncome',
-            'zalazarBalancePayments',
             'activePaymentMethods'
         ));
     }
