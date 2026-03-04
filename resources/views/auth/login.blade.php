@@ -15,6 +15,7 @@
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 </head>
 
 <body class="bg-gradient-to-br from-emerald-50 to-green-100 min-h-screen">
@@ -68,7 +69,7 @@
                             </svg>
                             Reportes y estadísticas en tiempo real
                         </div>
-                                                <div class="flex items-center text-white" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.8);">
+                        <div class="flex items-center text-white" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.8);">
                             <svg class="w-5 h-5 mr-3 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                                 stroke="currentColor" style="filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.8));">
                                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -76,7 +77,7 @@
                             </svg>
                             Recordatorios automáticos a pacientes por Whatsapp
                         </div>
-                                                <div class="flex items-center text-white" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.8);">
+                        <div class="flex items-center text-white" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.8);">
                             <svg class="w-5 h-5 mr-3 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                                 stroke="currentColor" style="filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.8));">
                                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -84,7 +85,7 @@
                             </svg>
                             Historial médico digital y gestión de pacientes
                         </div>
-                                                <div class="flex items-center text-white" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.8);">
+                        <div class="flex items-center text-white" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.8);">
                             <svg class="w-5 h-5 mr-3 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                                 stroke="currentColor" style="filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.8));">
                                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -97,12 +98,13 @@
             </div>
         </div>
 
-        <!-- Formulario de login -->
+        <!-- Panel de login -->
         <div class="w-full lg:w-1/2 xl:w-2/5 flex items-center justify-center px-4">
             <div class="w-full max-w-md">
                 <div class="bg-white shadow-2xl rounded-2xl p-8">
+
                     <!-- Logo y título -->
-                    <div class="text-center mb-8">
+                    <div class="text-center mb-6">
                         <div style="display: flex; justify-content: center; align-items: center; width: 100%;">
                             <img src="{{ center_image('logo', 'logo.png') }}" alt="Logo"
                                 style="max-width:200px;max-height:200px;" />
@@ -110,55 +112,74 @@
                         <p class="text-gray-600 mt-2">{{ setting('center_subtitle', 'Sistema de Gestión Médica') }}</p>
                     </div>
 
-                    <!-- Formulario -->
-                    <form method="POST" action="{{ route('login') }}" class="space-y-6">
-                        @csrf
+                    @if(request('reset'))
+                    <div class="mb-5 px-4 py-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-800">
+                        Datos de demo reiniciados correctamente.
+                    </div>
+                    @endif
 
-                        <!-- Email -->
-                        <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-                                Correo Electrónico
-                            </label>
-                            <input type="email" id="email" name="email" value="{{ old('email') }}" required
-                                autofocus
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all @error('email') border-red-500 @enderror"
-                                placeholder="tu@email.com">
-                            @error('email')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
+                    @if(session('success'))
+                    <div class="mb-5 px-4 py-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-800">
+                        {{ session('success') }}
+                    </div>
+                    @endif
+
+                    @if(!app()->environment('production') && count($demoUsers))
+
+                    {{-- Modo demo: cards primero, formulario plegado --}}
+                    <div x-data="{ formOpen: {{ $errors->any() ? 'true' : 'false' }} }">
+
+                        <!-- Cards de acceso rápido -->
+                        <p class="text-xs text-gray-400 text-center mb-3 font-medium uppercase tracking-wide">Acceso rápido — demo</p>
+                        <div class="grid grid-cols-3 gap-2 mb-5">
+                            @foreach($demoUsers as $demoUser)
+                            <form method="POST" action="{{ route('demo.login') }}">
+                                @csrf
+                                <input type="hidden" name="user_id" value="{{ $demoUser->id }}">
+                                <button type="submit"
+                                    class="w-full flex flex-col items-center gap-1 p-3 rounded-xl border border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 transition-all group">
+                                    <div class="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-semibold text-sm group-hover:bg-emerald-200">
+                                        {{ strtoupper(substr($demoUser->name, 0, 2)) }}
+                                    </div>
+                                    <span class="text-xs text-gray-600 font-medium leading-tight text-center">{{ $demoUser->name }}</span>
+                                    <span class="text-xs text-gray-400">{{ $demoUser->profile?->name ?? 'Sin perfil' }}</span>
+                                </button>
+                            </form>
+                            @endforeach
                         </div>
 
-                        <!-- Password -->
-                        <div>
-                            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-                                Contraseña
-                            </label>
-                            <input type="password" id="password" name="password" required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all @error('password') border-red-500 @enderror"
-                                placeholder="••••••••">
-                            @error('password')
-                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <!-- Remember me -->
-                        <div class="flex items-center justify-between">
-                            <label class="flex items-center">
-                                <input type="checkbox" name="remember"
-                                    class="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500 focus:ring-2">
-                                <span class="ml-2 text-sm text-gray-700">Recordarme</span>
-                            </label>
-                        </div>
-
-                        <!-- Submit button -->
-                        <button type="submit"
-                            class="w-full bg-gradient-to-r from-emerald-500 to-green-600 text-white py-3 px-4 rounded-lg hover:from-emerald-600 hover:to-green-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all font-medium">
-                            Iniciar Sesión
+                        <!-- Toggle formulario -->
+                        <button type="button" @click="formOpen = !formOpen"
+                            class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-sm text-gray-600">
+                            <span>Ingresar con usuario y contraseña</span>
+                            <svg :class="formOpen ? 'rotate-180' : ''" class="w-4 h-4 transition-transform text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                            </svg>
                         </button>
-                    </form>
+
+                        <!-- Formulario plegado -->
+                        <div x-show="formOpen"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 -translate-y-2"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 translate-y-0"
+                             x-transition:leave-end="opacity-0 -translate-y-2"
+                             class="mt-4">
+                            @include('auth._login-form')
+                        </div>
+
+                    </div>
+
+                    @else
+
+                    {{-- Sin demo: formulario directo --}}
+                    @include('auth._login-form')
+
+                    @endif
 
                     <!-- Footer -->
-                    <div class="mt-8 text-center">
+                    <div class="mt-6 text-center">
                         <p class="text-xs text-gray-500">
                             {{ setting('center_name') }} v{{ config('app.version') }} - &copy; {{ date('Y') }}
                             - Designed by <a target="_blank" href="https://pez.com.ar">Pez</a>

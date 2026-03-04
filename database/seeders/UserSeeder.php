@@ -44,5 +44,15 @@ class UserSeeder extends Seeder
             'professional_id' => $professional?->id,
             'is_active'       => true,
         ]);
+
+        // Usuario DEV — acceso total, requiere contraseña (no aparece en cards de demo)
+        $devProfile = Profile::where('name', 'DEV')->first();
+        User::create([
+            'name'       => 'DEV',
+            'email'      => 'dev@pez.com.ar',
+            'password'   => Hash::make(env('DEV_PASSWORD', 'dev.pez2024')),
+            'profile_id' => $devProfile?->id,
+            'is_active'  => true,
+        ]);
     }
 }

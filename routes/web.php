@@ -3,6 +3,7 @@
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AgendaController;
 use App\Http\Controllers\ClinicalRecordController;
+use App\Http\Controllers\DemoController;
 use App\Http\Controllers\SettingsCenterController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AuthController;
@@ -29,6 +30,9 @@ Route::get('/', function () {
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Demo access (disabled in production)
+Route::post('/demo/login', [DemoController::class, 'login'])->name('demo.login');
 
 // Protected routes
 Route::middleware(['auth'])->group(function () {
@@ -165,6 +169,10 @@ Route::middleware(['auth'])->group(function () {
         Route::resource('recesos', App\Http\Controllers\RecessController::class)->except(['show', 'create', 'edit']);
         Route::patch('/recesos/{receso}/toggle-status', [App\Http\Controllers\RecessController::class, 'toggleStatus'])->name('recesos.toggle-status');
     });
+
+    // Demo reset (disabled in production)
+    Route::get('/demo/reset', [DemoController::class, 'showReset'])->name('demo.reset');
+    Route::post('/demo/reset', [DemoController::class, 'reset'])->name('demo.reset.execute');
 
     // Rutas de Sistema (módulo: system)
     Route::middleware(['module:system'])->group(function () {

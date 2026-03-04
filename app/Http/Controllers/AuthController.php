@@ -23,7 +23,16 @@ class AuthController extends Controller
             return redirect()->route('dashboard');
         }
 
-        return view('auth.login');
+        $demoUsers = [];
+        if (!app()->environment('production')) {
+            $demoUsers = User::with('profile')
+                ->where('email', 'like', '%@clinicademo.com')
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get();
+        }
+
+        return view('auth.login', compact('demoUsers'));
     }
 
     /**
