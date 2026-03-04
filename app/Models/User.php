@@ -102,6 +102,16 @@ class User extends Authenticatable
     }
 
     /**
+     * Nivel jerárquico del usuario (3=SuperAdmin, 2=Admin, 1=Estándar)
+     */
+    public function hierarchyLevel(): int
+    {
+        if ($this->canAccessModule('system')) return 3;
+        if ($this->canAccessModule('configuration')) return 2;
+        return 1;
+    }
+
+    /**
      * Verificar si es un profesional vinculado
      */
     public function isProfessional(): bool
