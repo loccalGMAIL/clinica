@@ -1,5 +1,20 @@
 @props(['items' => []])
 
+@php
+$tourMap = [
+    'Dashboard'     => 'nav-dashboard',
+    'Turnos'        => 'nav-appointments',
+    'Agenda'        => 'nav-agenda',
+    'Pacientes'     => 'nav-patients',
+    'Cobros'        => 'nav-payments',
+    'Caja del Día'  => 'nav-cash',
+    'Mi Dashboard'  => 'nav-pro-dashboard',
+    'Mis Turnos'    => 'nav-pro-appointments',
+    'Mis Pacientes' => 'nav-pro-patients',
+    'Liquidaciones' => 'nav-pro-liquidations',
+];
+@endphp
+
 <div class="px-2 py-4">
 
     <!-- Menu Items -->
@@ -76,6 +91,7 @@
                           {{ request()->is(ltrim($item['href'], '/') . '*')
                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400'
                              : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800' }}"
+                   @if(isset($tourMap[$item['title']])) data-tour="{{ $tourMap[$item['title']] }}" @endif
                    x-data="{ tooltip: false }"
                    @mouseenter="if (collapsed) tooltip = true"
                    @mouseleave="tooltip = false">

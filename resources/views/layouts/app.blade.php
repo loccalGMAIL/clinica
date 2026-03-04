@@ -189,7 +189,8 @@
                     [
                         'title' => 'Actividad',
                         'href' => '/activity-log'
-                    ]
+                    ],
+                    ...(app()->environment('production') ? [] : [['title' => 'Reiniciar Demo', 'href' => route('demo.reset')]]),
                 ]
             ];
         }
@@ -281,6 +282,25 @@
                 <h1 class="text-lg font-semibold text-gray-900 dark:text-white">@yield('mobileTitle', 'Dashboard')</h1>
             </div>
 
+            @if(!app()->environment('production'))
+            <div class="bg-amber-50 border-b border-amber-200 px-4 py-1.5 flex items-center justify-between text-sm">
+                <div class="flex items-center gap-2 text-amber-800">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                    <span><strong>Modo Demo</strong> · {{ auth()->user()->name }}
+                        <span class="text-amber-600 font-normal">({{ auth()->user()->profile?->name ?? 'Sin perfil' }})</span>
+                    </span>
+                </div>
+                <form method="POST" action="{{ route('logout') }}" class="inline">
+                    @csrf
+                    <button type="submit" class="text-xs text-amber-700 hover:text-amber-900 underline underline-offset-2">
+                        Cambiar usuario
+                    </button>
+                </form>
+            </div>
+            @endif
+
             <!-- Page content -->
             <main>
                 @yield('content')
@@ -295,5 +315,47 @@
     <x-toast-notifications />
 
     @stack('scripts')
+
+    @if(!app()->environment('production'))
+    {{-- Driver.js CDN --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.iife.js"></script>
+
+    <button onclick="startDemoTour()"
+        title="Iniciar tour"
+        class="fixed bottom-6 right-6 z-40 w-11 h-11 rounded-full bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 flex items-center justify-center text-lg font-bold">
+        ?
+    </button>
+
+    <script>
+    function startDemoTour() {
+        const driver = window.driver.js.driver;
+        @php $isProfessional = auth()->user()->isProfessional(); @endphp
+
+        @if($isProfessional)
+        const steps = [
+            { element: '[data-tour="nav-pro-dashboard"]', popover: { title: 'Mi Dashboard', description: 'Resumen de tus turnos del día, próximas citas y estadísticas personales.', side: 'right' }},
+            { element: '[data-tour="nav-pro-appointments"]', popover: { title: 'Mis Turnos', description: 'Listado completo de tus turnos: pasados, presentes y futuros.', side: 'right' }},
+            { element: '[data-tour="nav-pro-patients"]', popover: { title: 'Mis Pacientes', description: 'Acceso a la historia clínica de tus pacientes.', side: 'right' }},
+            { element: '[data-tour="nav-pro-liquidations"]', popover: { title: 'Liquidaciones', description: 'Detalle de tus comisiones y liquidaciones mensuales.', side: 'right' }},
+        ];
+        @else
+        const steps = [
+            { element: '[data-tour="nav-dashboard"]', popover: { title: 'Dashboard', description: 'Vista general del día: turnos programados, cobros pendientes y actividad reciente.', side: 'right' }},
+            { element: '[data-tour="nav-appointments"]', popover: { title: 'Gestión de Turnos', description: 'Crea, edita y gestiona todos los turnos médicos. Asigná profesionales, pacientes y consultorios.', side: 'right' }},
+            { element: '[data-tour="nav-agenda"]', popover: { title: 'Agenda', description: 'Vista visual del calendario de turnos por profesional y día.', side: 'right' }},
+            { element: '[data-tour="nav-patients"]', popover: { title: 'Pacientes', description: 'Registro completo de pacientes, historia clínica y datos de obra social.', side: 'right' }},
+            { element: '[data-tour="nav-payments"]', popover: { title: 'Cobros', description: 'Registrá pagos individuales o por paquete. El sistema asigna automáticamente a los turnos.', side: 'right' }},
+            { element: '[data-tour="nav-cash"]', popover: { title: 'Caja del Día', description: 'Control de ingresos, egresos y arqueo de caja en tiempo real.', side: 'right' }},
+        ];
+        @endif
+
+        const d = driver({ steps, animate: true, showProgress: true,
+            nextBtnText: 'Siguiente →', prevBtnText: '← Anterior', doneBtnText: 'Finalizar',
+            progressText: '@{{CURRENT}} de @{{TOTAL}}' });
+        d.drive();
+    }
+    </script>
+    @endif
 </body>
 </html>
