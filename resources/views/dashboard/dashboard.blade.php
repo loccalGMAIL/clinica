@@ -566,11 +566,11 @@ function urgencyModalDashboard() {
                 @php
                     $consultasDetalleOrdenadas = collect($dashboardData['consultasDetalle'])
                         ->sortByDesc(function($consulta) {
-                            // Prioridad: urgencias primero, luego atendidas, luego el resto
-                            return ($consulta['isUrgency'] ? 2 : 0) + ($consulta['status'] === 'attended' ? 1 : 0);
+                            // Prioridad: urgencias primero, luego el resto
+                            return $consulta['isUrgency'] ? 1 : 0;
                         })
                         ->filter(function($consulta) {
-                            return !($consulta['status'] === 'attended' && $consulta['isPaid']) && $consulta['status'] !== 'absent';
+                            return $consulta['status'] === 'scheduled';
                         })
                         ->values();
                 @endphp
