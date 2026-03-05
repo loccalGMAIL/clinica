@@ -20,7 +20,7 @@
             var t = localStorage.getItem('theme') || 'system';
             function apply(theme) {
                 var dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                document.documentElement.classList.toggle('mode:dark', dark);
+                document.documentElement.classList.toggle('dark', dark);
             }
             apply(t);
             if (t === 'system') {
@@ -278,18 +278,7 @@
             </div>
 
             <!-- Footer -->
-            <div class="border-t border-gray-200 dark:border-gray-700 p-2 space-y-1">
-
-                <!-- Theme Toggle -->
-                <div x-data="themeToggle()">
-                    <button @click="cycle()"
-                            class="w-full flex items-center px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors duration-200"
-                            :title="label">
-                        <span class="w-5 h-5 flex-shrink-0 flex items-center justify-center" x-html="icon"></span>
-                        <span x-show="!$parent.collapsed" x-cloak class="ml-3 truncate" x-text="label"></span>
-                    </button>
-                </div>
-
+            <div class="border-t border-gray-200 dark:border-gray-700 p-2">
                 @include('layouts.nav-user')
             </div>
         </div>
@@ -326,6 +315,17 @@
                 </form>
             </div>
             @endif
+
+            <!-- Top bar: fecha + tema -->
+            <div class="flex items-center justify-end gap-3 px-4 py-1.5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+                <span class="text-xs text-gray-400 dark:text-gray-500">{{ now()->translatedFormat('d \d\e F \d\e Y') }}</span>
+                <div x-data="themeToggle()">
+                    <button @click="cycle()" :title="label"
+                            class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-800 transition-colors duration-200">
+                        <span class="w-4 h-4 flex items-center justify-center" x-html="icon"></span>
+                    </button>
+                </div>
+            </div>
 
             <!-- Page content -->
             <main>
@@ -370,7 +370,7 @@
             _apply() {
                 const dark = this.theme === 'dark' ||
                     (this.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                document.documentElement.classList.toggle('mode:dark', dark);
+                document.documentElement.classList.toggle('dark', dark);
             }
         };
     }
