@@ -566,11 +566,14 @@ function urgencyModalDashboard() {
                 @php
                     $consultasDetalleOrdenadas = collect($dashboardData['consultasDetalle'])
                         ->sortByDesc(function($consulta) {
-                            // Prioridad: urgencias primero, luego el resto
-                            return $consulta['isUrgency'] ? 1 : 0;
+                            // Prioridad: urgencias primero, luego atendidos pendientes de cobro, luego el resto
+                            return ($consulta['isUrgency'] ? 4 : 0)
+                                 + ($consulta['status'] === 'attended' && !$consulta['isPaid'] ? 2 : 0);
                         })
                         ->filter(function($consulta) {
-                            return $consulta['status'] === 'scheduled';
+                            // Mostrar: programados + atendidos sin cobrar. Ocultar: ausentes, cancelados, cobrados.
+                            return !in_array($consulta['status'], ['absent', 'cancelled'])
+                                && !($consulta['status'] === 'attended' && $consulta['isPaid']);
                         })
                         ->values();
                 @endphp
@@ -663,8 +666,8 @@ function urgencyModalDashboard() {
                                     </div>
                                     
                                     <!-- Botones de acción -->
-                                    <div class="flex gap-1" x-data="appointmentActions({{ $consulta['id'] }}, {{ $consulta['monto'] ?? 0 }})">
-                                        @if($consulta['canMarkAttended'])
+                                    <div class="flex gap-1" x-data="appointmentActions({{ $consulta['id'] }}, {{ $consulta['monto'] ?? 0 }}, '{{ $consulta['status'] }}', {{ $consulta['isPaid'] ? 'true' : 'false' }})">
+                                        <template x-if="canMarkAttended">
                                             <button @click="markAttended()" :disabled="loading"
                                                     class="p-1.5 text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md transition-colors duration-200 disabled:cursor-not-allowed"
                                                     title="Marcar como atendido">
@@ -672,19 +675,19 @@ function urgencyModalDashboard() {
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                 </svg>
                                             </button>
-                                        @endif
-                                        
-                                        @if($consulta['canMarkCompleted'])
+                                        </template>
+
+                                        <template x-if="canMarkCompleted">
                                             <button @click="markCompletedAndPaid()" :disabled="loading"
                                                     class="p-1.5 text-xs bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-md transition-colors duration-200 disabled:cursor-not-allowed"
-                                                    title="Finalizar y cobrar">
+                                                    title="Cobrar">
                                                 <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                 </svg>
                                             </button>
-                                        @endif
-                                        
-                                        @if($consulta['status'] === 'scheduled')
+                                        </template>
+
+                                        <template x-if="status === 'scheduled'">
                                             <button @click="markAbsent()" :disabled="loading"
                                                     class="p-1.5 text-xs bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white rounded-md transition-colors duration-200 disabled:cursor-not-allowed"
                                                     title="Marcar como ausente">
@@ -692,7 +695,7 @@ function urgencyModalDashboard() {
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                 </svg>
                                             </button>
-                                        @endif
+                                        </template>
                                     </div>
                                 </div>
                             </div>
@@ -929,10 +932,15 @@ function urgencyModalDashboard() {
     }
 
     // Alpine.js appointment actions component
-    function appointmentActions(appointmentId, estimatedAmount = 0) {
+    function appointmentActions(appointmentId, estimatedAmount = 0, initialStatus = 'scheduled', initialIsPaid = false) {
         return {
             loading: false,
-            
+            status: initialStatus,
+            isPaid: initialIsPaid,
+
+            get canMarkAttended() { return this.status === 'scheduled'; },
+            get canMarkCompleted() { return this.status === 'attended' && !this.isPaid; },
+
             async markAttended() {
                 if (this.loading) return;
                 this.loading = true;
@@ -942,12 +950,11 @@ function urgencyModalDashboard() {
                         method: 'POST'
                     });
 
-                    await DashboardAPI.showNotification('Turno marcado como atendido exitosamente', 'success');
+                    this.status = 'attended';
+                    this.loading = false;
 
-                    // Forzar recarga inmediata
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 500);
+                    // Abrir modal de cobro inmediatamente
+                    this.markCompletedAndPaid();
                 } catch (error) {
                     await DashboardAPI.showNotification(error.message || 'Error al marcar como atendido', 'error');
                     this.loading = false;
@@ -978,7 +985,6 @@ function urgencyModalDashboard() {
 
                     await DashboardAPI.showNotification('Turno marcado como ausente', 'success');
 
-                    // Forzar recarga inmediata
                     setTimeout(() => {
                         window.location.reload();
                     }, 500);
