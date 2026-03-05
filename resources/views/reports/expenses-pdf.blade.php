@@ -1,6 +1,10 @@
 @php
-    $logoPath = public_path('logo.png');
-    $logoBase64 = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
+    $logoPath = null; $logoMime = 'image/png';
+    foreach (['png', 'jpg', 'jpeg', 'webp', 'svg'] as $_ext) {
+        $_candidate = public_path("center/logo.{$_ext}");
+        if (file_exists($_candidate)) { $logoPath = $_candidate; $logoMime = "image/{$_ext}"; break; }
+    }
+    $logoBase64 = $logoPath ? base64_encode(file_get_contents($logoPath)) : null;
     $avgAmount = $totalCount > 0 ? $totalAmount / $totalCount : 0;
 @endphp
 <!DOCTYPE html>
@@ -204,7 +208,7 @@
         <tr>
             <td class="header-logo">
                 @if($logoBase64)
-                    <img src="data:image/png;base64,{{ $logoBase64 }}" style="height: 40px; width: auto;">
+                    <img src="data:{{ $logoMime }};base64,{{ $logoBase64 }}" style="height: 40px; width: auto;">
                 @endif
             </td>
             <td class="header-info">
