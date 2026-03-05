@@ -14,7 +14,7 @@
                 <div class="flex items-center justify-between gap-2">
                     <!-- Logo -->
                     <div class="flex-shrink-0">
-                        <img src="{{ asset('logo.png') }}" alt="Logo {{ setting('center_name') }}"
+                        <img src="{{ center_image('logo', 'logo.png') }}" alt="Logo {{ setting('center_name') }}"
                             class="w-32 h-32 print:w-24 print:h-24 object-contain">
                     </div>
 
