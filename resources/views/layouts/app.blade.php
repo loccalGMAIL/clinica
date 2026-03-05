@@ -17,7 +17,7 @@
     <!-- Tema: aplicar ANTES de renderizar para evitar flash -->
     <script>
         (function () {
-            var t = localStorage.getItem('theme') || 'system';
+            var t = localStorage.getItem('theme') || 'light';
             function apply(theme) {
                 var dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
                 document.documentElement.classList.toggle('dark', dark);
@@ -351,7 +351,7 @@
         const modes  = ['system', 'light', 'dark'];
 
         return {
-            theme: localStorage.getItem('theme') || 'system',
+            theme: localStorage.getItem('theme') || 'light',
             get icon()  { return icons[this.theme]; },
             get label() { return labels[this.theme]; },
 
