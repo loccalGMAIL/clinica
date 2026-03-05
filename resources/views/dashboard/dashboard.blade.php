@@ -952,9 +952,6 @@ function urgencyModalDashboard() {
 
                     this.status = 'attended';
                     this.loading = false;
-
-                    // Abrir modal de cobro inmediatamente
-                    this.markCompletedAndPaid();
                 } catch (error) {
                     await DashboardAPI.showNotification(error.message || 'Error al marcar como atendido', 'error');
                     this.loading = false;
