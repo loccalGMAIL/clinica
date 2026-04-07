@@ -244,4 +244,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [UserController::class, 'profile'])->name('profile');
     Route::post('/change-password', [UserController::class, 'changePassword'])->name('change-password');
 
+    // Rutas de WhatsApp (demo/mockup)
+    Route::get('/whatsapp/config', [App\Http\Controllers\WhatsAppController::class, 'config'])->name('whatsapp.config');
+    Route::get('/whatsapp/messages', [App\Http\Controllers\WhatsAppController::class, 'messages'])->name('whatsapp.messages');
+    Route::get('/whatsapp/ai', [App\Http\Controllers\WhatsAppController::class, 'ai'])->name('whatsapp.ai');
+
 }); // End of auth middleware group
