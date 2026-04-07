@@ -34,10 +34,10 @@
     <style>
         [x-cloak] { display: none !important; }
         /* Estado inicial del sidebar antes de Alpine */
-        .sidebar-init { transform: translateX(-100%); width: 16rem; }
+        .sidebar-init { transform: translateX(-100%); width: 14rem; }
         @media (min-width: 768px) { .sidebar-init { transform: translateX(0); } }
         .content-init { margin-left: 0; }
-        @media (min-width: 768px) { .content-init { margin-left: 16rem; } }
+        @media (min-width: 768px) { .content-init { margin-left: 14rem; } }
     </style>
     @stack('styles')
 </head>
@@ -119,6 +119,15 @@
                 'title' => 'Caja del Día',
                 'href' => '/cash/daily',
                 'icon' => '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" /></svg>'
+            ],
+            [
+                'title' => 'WhatsApp',
+                'icon'  => '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 20.25c4.556 0 8.25-3.694 8.25-8.25S16.556 3.75 12 3.75 3.75 7.444 3.75 12c0 1.561.432 3.02 1.185 4.267L3.75 20.25l4.178-1.166A8.21 8.21 0 0012 20.25z" /></svg>',
+                'children' => [
+                    ['title' => 'Configuración',    'href' => route('whatsapp.config')],
+                    ['title' => 'Mensajes Enviados', 'href' => route('whatsapp.messages')],
+                    ['title' => 'AI',                'href' => route('whatsapp.ai')],
+                ],
             ]
         ];
 
@@ -250,34 +259,32 @@
         <!-- Sidebar -->
         <div :style="{
             transform: (collapsed && isMobile) ? 'translateX(-100%)' : 'translateX(0)',
-            width: collapsed && !isMobile ? '4rem' : '16rem'
+            width: collapsed && !isMobile ? '4rem' : '14rem'
         }"
         class="sidebar-init fixed left-0 top-0 z-50 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 ease-in-out">
             
             <!-- Header -->
-            <div class="flex items-center p-4 border-b border-gray-200 dark:border-gray-700">
-                <div class="flex items-center w-full">
-                    <a href="{{ Auth::check() && Auth::user()->isProfessional() ? route('professional.dashboard') : route('dashboard') }}" class="flex items-center">
-                        @include('layouts.app-logo')
-                    </a>
-                    
-                    <!-- Cerrar sidebar en móvil -->
-                    <button @click="collapsed = true"
-                            class="ml-auto p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 md:hidden">
-                        <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                    <!-- Colapsar sidebar en desktop -->
-                    <button @click="toggle()"
-                            class="ml-auto p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 hidden md:flex">
-                        <svg :class="{ 'rotate-180': collapsed }"
-                             class="w-4 h-4"
-                             fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                        </svg>
-                    </button>
-                </div>
+            <div class="relative flex items-center justify-center p-4 border-b border-gray-200 dark:border-gray-700">
+                <a href="{{ Auth::check() && Auth::user()->isProfessional() ? route('professional.dashboard') : route('dashboard') }}" class="flex items-center">
+                    @include('layouts.app-logo')
+                </a>
+
+                <!-- Cerrar sidebar en móvil -->
+                <button @click="collapsed = true"
+                        class="absolute right-3 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 md:hidden">
+                    <svg class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+                <!-- Colapsar sidebar en desktop -->
+                <button @click="toggle()"
+                        class="absolute right-3 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 hidden md:flex">
+                    <svg :class="{ 'rotate-180': collapsed }"
+                         class="w-4 h-4"
+                         fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                    </svg>
+                </button>
             </div>
 
             <!-- Content -->
@@ -294,7 +301,7 @@
         </div>
 
         <!-- Main content wrapper -->
-        <div :style="{ marginLeft: isMobile ? '0' : (collapsed ? '4rem' : '16rem') }"
+        <div :style="{ marginLeft: isMobile ? '0' : (collapsed ? '4rem' : '14rem') }"
         class="content-init min-h-screen bg-gray-50 dark:bg-gray-900 transition-[margin] duration-300 ease-in-out">
             <!-- Mobile header -->
             <div class="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
