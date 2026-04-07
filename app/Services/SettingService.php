@@ -7,14 +7,16 @@ use Illuminate\Support\Facades\Cache;
 
 class SettingService
 {
-    private const TTL = 300; // 5 minutos
+    private const CACHE_KEY = 'settings.all';
+    private const CACHE_TTL = 300; // 5 minutos
 
     public function get(string $key, mixed $default = null): mixed
     {
-        return Cache::remember("setting:{$key}", self::TTL, function () use ($key, $default) {
-            $setting = Setting::where('key', $key)->first();
-            return $setting?->value ?? $default;
+        $settings = Cache::remember(self::CACHE_KEY, self::CACHE_TTL, function () {
+            return Setting::all()->pluck('value', 'key')->toArray();
         });
+
+        return $settings[$key] ?? $default;
     }
 
     public function set(string $key, string $group, mixed $value): void
@@ -23,11 +25,11 @@ class SettingService
             ['key' => $key],
             ['group' => $group, 'value' => $value]
         );
-        Cache::forget("setting:{$key}");
+        $this->clearCache();
     }
 
     public function clearCache(): void
     {
-        Cache::flush();
+        Cache::forget(self::CACHE_KEY);
     }
 }

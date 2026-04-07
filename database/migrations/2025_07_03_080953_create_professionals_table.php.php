@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('dni', 20)->unique()->nullable();
             $table->string('phone', 50)->nullable();
             $table->string('email')->nullable();
+            $table->date('birthday')->nullable();
             $table->decimal('commission_percentage', 5, 2)->default(70.00);
             $table->boolean('is_active')->default(true);
             $table->timestamps();

@@ -30,9 +30,6 @@ class LiquidationController extends Controller
             $amount = $request->amount;
             $date = Carbon::parse($request->date);
 
-            // TEMPORAL: Excepción para Dra. Zalazar (ID=1) - Cobra directamente, no retira de caja
-            $isDraZalazar = $professional->id === 1;
-
             // 1. Verificar que la caja esté abierta
             $cashStatus = CashMovement::getCashStatusForDate($date);
             if (! $cashStatus['is_open']) {
@@ -160,14 +157,10 @@ class LiquidationController extends Controller
                 ->whereDate('liquidation_date', $date)
                 ->count() + 1;
 
-            // 8. Verificar que hay suficiente efectivo en caja (excepto Dra. Zalazar)
-            if (!$isDraZalazar) {
-                $currentBalance = $this->getCurrentCashBalance($date);
-                if ($currentBalance < $amount) {
-                    throw new \Exception('Saldo insuficiente en caja. Disponible: $'.number_format($currentBalance, 2));
-                }
-            } else {
-                $currentBalance = $this->getCurrentCashBalance($date);
+            // 8. Verificar que hay suficiente efectivo en caja
+            $currentBalance = $this->getCurrentCashBalance($date);
+            if ($currentBalance < $amount) {
+                throw new \Exception('Saldo insuficiente en caja. Disponible: $'.number_format($currentBalance, 2));
             }
 
             // 9. Crear registro en professional_liquidations
@@ -189,8 +182,7 @@ class LiquidationController extends Controller
                 'paid_at' => now(),
                 'paid_by' => auth()->id(),
                 'notes' => "Liquidación #{$liquidationNumber} del día {$date->format('d/m/Y')}".
-                          ($totalRefunds > 0 ? " - Reintegros descontados: \${$totalRefunds}" : "").
-                          ($isDraZalazar ? " - PAGO DIRECTO: Profesional cobra directamente, no retira de caja" : ""),
+                          ($totalRefunds > 0 ? " - Reintegros descontados: \${$totalRefunds}" : ""),
             ]);
 
             // 10. Crear detalles en liquidation_details
@@ -286,11 +278,9 @@ class LiquidationController extends Controller
             }
 
             // 12. Crear movimiento de caja por pago al profesional
-            // Solo si:
-            // - NO es Dra. Zalazar (ella cobra directamente, no retira de caja)
-            // - El monto es POSITIVO (centro debe al profesional)
+            // Solo si el monto es POSITIVO (centro debe al profesional)
             // Si el monto es negativo, el profesional debe al centro → no hay salida de caja
-            $shouldCreateCashMovement = !$isDraZalazar && $netProfessionalAmount > 0;
+            $shouldCreateCashMovement = $netProfessionalAmount > 0;
 
             if ($shouldCreateCashMovement) {
                 CashMovement::create([

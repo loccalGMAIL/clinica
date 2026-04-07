@@ -15,8 +15,19 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::with(['lastLogin', 'profile.modules'])->orderBy('name')->get();
-        $profiles = Profile::orderBy('name')->get();
+        $currentLevel = auth()->user()->hierarchyLevel();
+
+        $users = User::with(['lastLogin', 'profile.modules'])
+            ->orderBy('name')
+            ->get()
+            ->filter(fn($u) => $u->hierarchyLevel() <= $currentLevel)
+            ->values();
+
+        $profiles = Profile::with('modules')
+            ->orderBy('name')
+            ->get()
+            ->filter(fn($p) => $p->hierarchyLevel() <= $currentLevel)
+            ->values();
 
         return view('users.index', compact('users', 'profiles'));
     }
@@ -45,6 +56,13 @@ class UserController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        if ($request->profile_id) {
+            $profile = Profile::with('modules')->find($request->profile_id);
+            if ($profile && $profile->hierarchyLevel() > auth()->user()->hierarchyLevel()) {
+                return response()->json(['error' => 'No puede asignar un perfil de mayor jerarquía'], 403);
+            }
+        }
+
         User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -69,6 +87,10 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
+        if (!$this->canManageUser($user)) {
+            return response()->json(['error' => 'No tiene permisos para gestionar este usuario'], 403);
+        }
+
         return response()->json([
             'id' => $user->id,
             'name' => $user->name,
@@ -82,6 +104,10 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user)
     {
+        if (!$this->canManageUser($user)) {
+            return response()->json(['error' => 'No tiene permisos para gestionar este usuario'], 403);
+        }
+
         $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
@@ -97,6 +123,13 @@ class UserController extends Controller
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        if ($request->profile_id) {
+            $profile = Profile::with('modules')->find($request->profile_id);
+            if ($profile && $profile->hierarchyLevel() > auth()->user()->hierarchyLevel()) {
+                return response()->json(['error' => 'No puede asignar un perfil de mayor jerarquía'], 403);
+            }
         }
 
         $data = [
@@ -125,6 +158,10 @@ class UserController extends Controller
             return response()->json(['error' => 'No puede eliminar su propio usuario'], 400);
         }
 
+        if (!$this->canManageUser($user)) {
+            return response()->json(['error' => 'No tiene permisos para gestionar este usuario'], 403);
+        }
+
         $user->delete();
 
         return response()->json(['success' => true, 'message' => 'Usuario eliminado exitosamente']);
@@ -138,6 +175,10 @@ class UserController extends Controller
         // No permitir desactivar al usuario logueado
         if ($user->id === auth()->id()) {
             return response()->json(['error' => 'No puede desactivar su propio usuario'], 400);
+        }
+
+        if (!$this->canManageUser($user)) {
+            return response()->json(['error' => 'No tiene permisos para gestionar este usuario'], 403);
         }
 
         $user->update(['is_active' => ! $user->is_active]);
@@ -175,6 +216,11 @@ class UserController extends Controller
         $user->update(['password' => Hash::make($request->password)]);
 
         return response()->json(['success' => true, 'message' => 'Contraseña actualizada exitosamente']);
+    }
+
+    private function canManageUser(User $user): bool
+    {
+        return auth()->user()->hierarchyLevel() >= $user->hierarchyLevel();
     }
 
     /**

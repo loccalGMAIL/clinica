@@ -29,6 +29,7 @@ class User extends Authenticatable
         'email',
         'password',
         'profile_id',
+        'professional_id',
         'is_active',
     ];
 
@@ -64,6 +65,11 @@ class User extends Authenticatable
         return $this->belongsTo(Profile::class);
     }
 
+    public function professional(): BelongsTo
+    {
+        return $this->belongsTo(Professional::class);
+    }
+
     /**
      * Último login registrado en ActivityLog
      */
@@ -93,6 +99,24 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->canAccessModule('configuration');
+    }
+
+    /**
+     * Nivel jerárquico del usuario (3=SuperAdmin, 2=Admin, 1=Estándar)
+     */
+    public function hierarchyLevel(): int
+    {
+        if ($this->canAccessModule('system')) return 3;
+        if ($this->canAccessModule('configuration')) return 2;
+        return 1;
+    }
+
+    /**
+     * Verificar si es un profesional vinculado
+     */
+    public function isProfessional(): bool
+    {
+        return (bool) $this->professional_id;
     }
 
     /**

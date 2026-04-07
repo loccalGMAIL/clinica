@@ -5,20 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', config('app.name', 'Laravel'))</title>
-    
+
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
     <link rel="alternate icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
-    
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600&display=swap" rel="stylesheet" />
 
-    <!-- Tema: aplicar antes de pintar para evitar flash. Default: light -->
+    <!-- Tema: aplicar ANTES de renderizar para evitar flash -->
     <script>
         (function () {
-            if (localStorage.getItem('theme') === 'dark') {
-                document.documentElement.classList.add('dark');
+            var t = localStorage.getItem('theme') || 'light';
+            function apply(theme) {
+                var dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                document.documentElement.classList.toggle('dark', dark);
+            }
+            apply(t);
+            if (t === 'system') {
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { apply('system'); });
             }
         })();
     </script>
@@ -37,6 +43,47 @@
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen">
     @php
+        // Portal profesional — navegación exclusiva
+        if (Auth::check() && Auth::user()->isProfessional()) {
+            $navigationItems = [
+                [
+                    'title' => 'Mi Dashboard',
+                    'href'  => route('professional.dashboard'),
+                    'icon'  => '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>',
+                ],
+                [
+                    'title' => 'Mis Turnos',
+                    'href'  => route('professional.appointments'),
+                    'icon'  => '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5a2.25 2.25 0 012.25 2.25v7.5" /></svg>',
+                ],
+                [
+                    'title' => 'Mis Pacientes',
+                    'href'  => route('professional.patients'),
+                    'icon'  => '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>',
+                ],
+                [
+                    'title' => 'Mis HCs',
+                    'href'  => route('professional.clinical'),
+                    'icon'  => '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" /></svg>',
+                ],
+                [
+                    'title' => 'Mi Horario',
+                    'href'  => route('professional.schedule'),
+                    'icon'  => '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>',
+                ],
+                [
+                    'title' => 'Liquidaciones',
+                    'href'  => route('professional.liquidations'),
+                    'icon'  => '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H4.5m2.25 0v3m0 0v.75A.75.75 0 016 10.5h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H6.75" /></svg>',
+                ],
+                [
+                    'title' => 'Mis Ausencias',
+                    'href'  => route('professional.absences'),
+                    'icon'  => '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5a2.25 2.25 0 002.25-2.25m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5a2.25 2.25 0 012.25 2.25v7.5M8.25 12h.008v.008H8.25V12zm4.5 0h.008v.008H12.75V12zm4.5 0h.008v.008H17.25V12z" /></svg>',
+                ],
+            ];
+        } else {
+        // Navegación estándar (admin / staff)
         $navigationItems = [
             [
                 'title' => 'Dashboard',
@@ -74,6 +121,15 @@
                 'icon' => '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" /></svg>'
             ]
         ];
+
+        // Agregar Historias Clínicas (módulo: clinical)
+        if (Auth::check() && Auth::user()->canAccessModule('clinical')) {
+            $navigationItems[] = [
+                'title' => 'Hist. Clínicas',
+                'href'  => route('clinical.index'),
+                'icon'  => '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" /></svg>',
+            ];
+        }
 
         // Agregar menú de reportes (solo si tiene módulo reports)
         if (Auth::check() && Auth::user()->canAccessModule('reports')) {
@@ -144,8 +200,8 @@
                 'icon' => '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" /></svg>',
                 'children' => [
                     [
-                        'title' => 'General',
-                        'href' => '/settings/center'
+                        'title' => 'Centro',
+                        'href' => route('settings.center')
                     ],
                     [
                         'title' => 'Perfiles',
@@ -158,10 +214,12 @@
                     [
                         'title' => 'Actividad',
                         'href' => '/activity-log'
-                    ]
+                    ],
+                    ...(app()->environment('production') ? [] : [['title' => 'Reiniciar Demo', 'href' => route('demo.reset')]]),
                 ]
             ];
         }
+        } // end else (navegación estándar)
     @endphp
 
     <!-- Sidebar Container -->
@@ -199,7 +257,7 @@
             <!-- Header -->
             <div class="flex items-center p-4 border-b border-gray-200 dark:border-gray-700">
                 <div class="flex items-center w-full">
-                    <a href="{{ route('dashboard') }}" class="flex items-center">
+                    <a href="{{ Auth::check() && Auth::user()->isProfessional() ? route('professional.dashboard') : route('dashboard') }}" class="flex items-center">
                         @include('layouts.app-logo')
                     </a>
                     
@@ -249,6 +307,36 @@
                 <h1 class="text-lg font-semibold text-gray-900 dark:text-white">@yield('mobileTitle', 'Dashboard')</h1>
             </div>
 
+            @if(!app()->environment('production'))
+            <div class="bg-amber-50 border-b border-amber-200 px-4 py-1.5 flex items-center justify-between text-sm">
+                <div class="flex items-center gap-2 text-amber-800">
+                    <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                    <span><strong>Modo Demo</strong> · {{ auth()->user()->name }}
+                        <span class="text-amber-600 font-normal">({{ auth()->user()->profile?->name ?? 'Sin perfil' }})</span>
+                    </span>
+                </div>
+                <form method="POST" action="{{ route('logout') }}" class="inline">
+                    @csrf
+                    <button type="submit" class="text-xs text-amber-700 hover:text-amber-900 underline underline-offset-2">
+                        Cambiar usuario
+                    </button>
+                </form>
+            </div>
+            @endif
+
+            <!-- Top bar: fecha + tema -->
+            <div class="flex items-center justify-end gap-3 px-4 py-1.5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+                <span class="text-xs text-gray-400 dark:text-gray-500">{{ now()->translatedFormat('d \d\e F \d\e Y') }}</span>
+                <div x-data="themeToggle()">
+                    <button @click="cycle()" :title="label"
+                            class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-800 transition-colors duration-200">
+                        <span class="w-4 h-4 flex items-center justify-center" x-html="icon"></span>
+                    </button>
+                </div>
+            </div>
+
             <!-- Page content -->
             <main>
                 <!-- Barra de fecha y toggle de tema -->
@@ -282,53 +370,96 @@
     <!-- Toast Notifications -->
     <x-toast-notifications />
 
+    <script>
+    function themeToggle() {
+        const icons = {
+            system: '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" /></svg>',
+            light:  '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>',
+            dark:   '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>',
+        };
+        const labels = { system: 'Sistema', light: 'Claro', dark: 'Oscuro' };
+        const modes  = ['system', 'light', 'dark'];
+
+        return {
+            theme: localStorage.getItem('theme') || 'light',
+            get icon()  { return icons[this.theme]; },
+            get label() { return labels[this.theme]; },
+
+            cycle() {
+                const idx  = modes.indexOf(this.theme);
+                this.theme = modes[(idx + 1) % modes.length];
+                localStorage.setItem('theme', this.theme);
+                this._apply();
+
+                // Escuchar cambios del sistema si se vuelve a "system"
+                if (this.theme === 'system') {
+                    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => this._apply());
+                }
+            },
+
+            _apply() {
+                const dark = this.theme === 'dark' ||
+                    (this.theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                document.documentElement.classList.toggle('dark', dark);
+            }
+        };
+    }
+    </script>
+
     @stack('scripts')
 
-    <!-- Fecha actual y toggle de tema -->
+    <!-- Fecha actual -->
     <script>
         (function () {
-            // Fecha en español
             const date = new Date();
             const formatted = date.toLocaleDateString('es-AR', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
+                weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
             });
-            // Capitalizar primera letra
             const el = document.getElementById('layout-date');
             if (el) el.textContent = formatted.charAt(0).toUpperCase() + formatted.slice(1);
-
-            // Estado inicial de íconos
-            const html    = document.documentElement;
-            const sunIcon  = document.getElementById('icon-sun');
-            const moonIcon = document.getElementById('icon-moon');
-
-            function applyTheme(dark) {
-                if (dark) {
-                    html.classList.add('dark');
-                    localStorage.setItem('theme', 'dark');
-                    if (sunIcon)  sunIcon.classList.add('hidden');
-                    if (moonIcon) moonIcon.classList.remove('hidden');
-                } else {
-                    html.classList.remove('dark');
-                    localStorage.setItem('theme', 'light');
-                    if (sunIcon)  sunIcon.classList.remove('hidden');
-                    if (moonIcon) moonIcon.classList.add('hidden');
-                }
-            }
-
-            // Sincronizar íconos con el tema actual al cargar
-            applyTheme(html.classList.contains('dark'));
-
-            // Click en el botón
-            const btn = document.getElementById('theme-toggle');
-            if (btn) {
-                btn.addEventListener('click', function () {
-                    applyTheme(!html.classList.contains('dark'));
-                });
-            }
         })();
     </script>
+
+    @if(!app()->environment('production'))
+    {{-- Driver.js CDN --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.3.1/dist/driver.iife.js"></script>
+
+    <button onclick="startDemoTour()"
+        title="Iniciar tour"
+        class="fixed bottom-6 right-6 z-40 w-11 h-11 rounded-full bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 flex items-center justify-center text-lg font-bold">
+        ?
+    </button>
+
+    <script>
+    function startDemoTour() {
+        const driver = window.driver.js.driver;
+        @php $isProfessional = auth()->user()->isProfessional(); @endphp
+
+        @if($isProfessional)
+        const steps = [
+            { element: '[data-tour="nav-pro-dashboard"]', popover: { title: 'Mi Dashboard', description: 'Resumen de tus turnos del día, próximas citas y estadísticas personales.', side: 'right' }},
+            { element: '[data-tour="nav-pro-appointments"]', popover: { title: 'Mis Turnos', description: 'Listado completo de tus turnos: pasados, presentes y futuros.', side: 'right' }},
+            { element: '[data-tour="nav-pro-patients"]', popover: { title: 'Mis Pacientes', description: 'Acceso a la historia clínica de tus pacientes.', side: 'right' }},
+            { element: '[data-tour="nav-pro-liquidations"]', popover: { title: 'Liquidaciones', description: 'Detalle de tus comisiones y liquidaciones mensuales.', side: 'right' }},
+        ];
+        @else
+        const steps = [
+            { element: '[data-tour="nav-dashboard"]', popover: { title: 'Dashboard', description: 'Vista general del día: turnos programados, cobros pendientes y actividad reciente.', side: 'right' }},
+            { element: '[data-tour="nav-appointments"]', popover: { title: 'Gestión de Turnos', description: 'Crea, edita y gestiona todos los turnos médicos. Asigná profesionales, pacientes y consultorios.', side: 'right' }},
+            { element: '[data-tour="nav-agenda"]', popover: { title: 'Agenda', description: 'Vista visual del calendario de turnos por profesional y día.', side: 'right' }},
+            { element: '[data-tour="nav-patients"]', popover: { title: 'Pacientes', description: 'Registro completo de pacientes, historia clínica y datos de obra social.', side: 'right' }},
+            { element: '[data-tour="nav-payments"]', popover: { title: 'Cobros', description: 'Registrá pagos individuales o por paquete. El sistema asigna automáticamente a los turnos.', side: 'right' }},
+            { element: '[data-tour="nav-cash"]', popover: { title: 'Caja del Día', description: 'Control de ingresos, egresos y arqueo de caja en tiempo real.', side: 'right' }},
+        ];
+        @endif
+
+        const d = driver({ steps, animate: true, showProgress: true,
+            nextBtnText: 'Siguiente →', prevBtnText: '← Anterior', doneBtnText: 'Finalizar',
+            progressText: '@{{CURRENT}} de @{{TOTAL}}' });
+        d.drive();
+    }
+    </script>
+    @endif
 </body>
 </html>

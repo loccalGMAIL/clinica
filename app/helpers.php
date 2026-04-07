@@ -12,11 +12,10 @@ if (! function_exists('setting')) {
 if (! function_exists('center_image')) {
     function center_image(string $name, string $fallback = ''): string
     {
-        $extensions = ['png', 'jpg', 'jpeg', 'webp', 'svg'];
-        foreach ($extensions as $ext) {
-            $path = public_path("center/{$name}.{$ext}");
-            if (file_exists($path)) {
-                return asset("center/{$name}.{$ext}") . '?v=' . filemtime($path);
+        $base = public_path("center/{$name}");
+        foreach (['png', 'jpg', 'jpeg', 'webp', 'svg', 'ico'] as $ext) {
+            if (file_exists("{$base}.{$ext}")) {
+                return asset("center/{$name}.{$ext}") . '?v=' . filemtime("{$base}.{$ext}");
             }
         }
         return $fallback ? asset($fallback) : '';

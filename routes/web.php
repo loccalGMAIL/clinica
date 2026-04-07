@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AgendaController;
+use App\Http\Controllers\ClinicalRecordController;
+use App\Http\Controllers\DemoController;
+use App\Http\Controllers\SettingsCenterController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -12,6 +15,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProfessionalController;
 use App\Http\Controllers\ProfessionalAbsenceController;
 use App\Http\Controllers\ProfessionalNoteController;
+use App\Http\Controllers\ProfessionalPortalController;
 use App\Http\Controllers\ProfessionalScheduleController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SpecialtyController;
@@ -26,6 +30,9 @@ Route::get('/', function () {
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Demo access (disabled in production)
+Route::post('/demo/login', [DemoController::class, 'login'])->name('demo.login');
 
 // Protected routes
 Route::middleware(['auth'])->group(function () {
@@ -170,6 +177,36 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/liquidation/process', [App\Http\Controllers\LiquidationController::class, 'processLiquidation'])->name('liquidation.process');
     });
 
+    // Rutas de Historias Clínicas (módulo: clinical)
+    Route::middleware(['module:clinical'])->group(function () {
+        Route::get('/clinical', [ClinicalRecordController::class, 'index'])->name('clinical.index');
+        Route::post('/clinical', [ClinicalRecordController::class, 'store'])->name('clinical.store');
+        Route::get('/clinical/{record}', [ClinicalRecordController::class, 'show'])->name('clinical.show');
+        Route::delete('/clinical/{record}', [ClinicalRecordController::class, 'destroy'])->name('clinical.destroy');
+    });
+
+    // Rutas de gestión de cuenta de profesional (módulo: configuration)
+    Route::middleware(['module:configuration'])->group(function () {
+        Route::get('/professionals/{professional}/account', [ProfessionalController::class, 'accountModal'])->name('professionals.account');
+        Route::post('/professionals/{professional}/account', [ProfessionalController::class, 'saveAccount'])->name('professionals.account.save');
+        Route::delete('/professionals/{professional}/account', [ProfessionalController::class, 'unlinkAccount'])->name('professionals.account.unlink');
+    });
+
+    // Portal de profesionales (módulo: professional)
+    Route::middleware(['module:professional'])->prefix('my')->name('professional.')->group(function () {
+        Route::get('/dashboard', [ProfessionalPortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('/appointments', [ProfessionalPortalController::class, 'appointments'])->name('appointments');
+        Route::get('/patients', [ProfessionalPortalController::class, 'patients'])->name('patients');
+        Route::get('/patients/{patient}', [ProfessionalPortalController::class, 'patientDetail'])->name('patient-detail');
+        Route::get('/clinical', [ProfessionalPortalController::class, 'clinical'])->name('clinical');
+        Route::post('/clinical', [ProfessionalPortalController::class, 'clinicalStore'])->name('clinical.store');
+        Route::get('/patients/{patient}/clinical', [ProfessionalPortalController::class, 'clinicalPatient'])->name('clinical.patient');
+        Route::get('/clinical/{record}', [ProfessionalPortalController::class, 'clinicalShow'])->name('clinical.show');
+        Route::get('/schedule', [ProfessionalPortalController::class, 'schedule'])->name('schedule');
+        Route::get('/liquidations', [ProfessionalPortalController::class, 'liquidations'])->name('liquidations');
+        Route::get('/absences', [ProfessionalPortalController::class, 'absences'])->name('absences');
+    });
+
     // Rutas de Configuración (módulo: configuration)
     Route::middleware(['module:configuration'])->group(function () {
         // Gestión de usuarios
@@ -181,12 +218,16 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/recesos/{receso}/toggle-status', [App\Http\Controllers\RecessController::class, 'toggleStatus'])->name('recesos.toggle-status');
     });
 
+    // Demo reset (disabled in production)
+    Route::get('/demo/reset', [DemoController::class, 'showReset'])->name('demo.reset');
+    Route::post('/demo/reset', [DemoController::class, 'reset'])->name('demo.reset.execute');
+
     // Rutas de Sistema (módulo: system)
     Route::middleware(['module:system'])->group(function () {
         // Configuración del centro
-        Route::get('/settings/center', [App\Http\Controllers\SettingsCenterController::class, 'index'])->name('settings.center');
-        Route::post('/settings/center', [App\Http\Controllers\SettingsCenterController::class, 'update'])->name('settings.center.update');
-        Route::post('/settings/center/toggle', [App\Http\Controllers\SettingsCenterController::class, 'toggle'])->name('settings.center.toggle');
+        Route::get('/settings/center', [SettingsCenterController::class, 'index'])->name('settings.center');
+        Route::post('/settings/center', [SettingsCenterController::class, 'update'])->name('settings.center.update');
+        Route::post('/settings/center/toggle', [SettingsCenterController::class, 'toggle'])->name('settings.center.toggle');
 
         // Gestión de perfiles
         Route::resource('profiles', ProfileController::class)->except(['create', 'edit', 'show']);

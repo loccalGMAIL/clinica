@@ -10,7 +10,7 @@ class ScheduleExceptionSeeder extends Seeder
 {
     public function run(): void
     {
-        $adminUser = User::where('role', 'admin')->first();
+        $adminUser = User::whereHas('profile', fn ($q) => $q->where('name', 'Administrador'))->first();
 
         $exceptions = [
             [

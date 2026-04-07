@@ -29,7 +29,6 @@
                     </svg>
                     Imprimir
                 </a>
-                {{-- Mostrar botón siempre que haya turnos atendidos (incluso con monto $0 como Dra. Zalazar) --}}
                 {{-- @if ($liquidationData['appointments']->count() > 0)
                     <button
                         onclick="liquidarProfesional({{ $liquidationData['professional']->id }}, '{{ $liquidationData['professional']->full_name }}', {{ $liquidationData['totals']['professional_amount'] }})"

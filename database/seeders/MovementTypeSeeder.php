@@ -217,18 +217,6 @@ class MovementTypeSeeder extends Seeder
         ]);
 
         MovementType::create([
-            'code' => 'zalazar_balance_payment',
-            'name' => 'Pago de Saldos Dra. Zalazar',
-            'description' => 'Pagos de saldos de la Dra. Zalazar',
-            'category' => 'income_detail',
-            'affects_balance' => 1,
-            'icon' => '💰',
-            'color' => 'green',
-            'is_active' => true,
-            'order' => 2,
-        ]);
-
-        MovementType::create([
             'code' => 'correction',
             'name' => 'Corrección de Ingreso',
             'description' => 'Ajuste o corrección de ingresos',

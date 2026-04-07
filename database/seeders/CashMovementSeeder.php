@@ -2,137 +2,157 @@
 
 namespace Database\Seeders;
 
-use App\Models\CashMovement;
+use App\Models\MovementType;
 use App\Models\Payment;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class CashMovementSeeder extends Seeder
 {
     public function run(): void
     {
-        $adminUser = User::where('role', 'admin')->first();
-        $movements = [];
-        $runningBalance = 0;
+        $adminUser = User::whereHas('profile', fn ($q) => $q->where('name', 'Administrador'))->first();
 
-        // Generar movimientos para los últimos 30 días
-        $startDate = Carbon::today()->subDays(30);
-        $endDate = Carbon::today();
+        // Obtener IDs de tipos de movimiento por código
+        $types = MovementType::whereIn('code', [
+            'patient_payment', 'professional_payment', 'expense', 'refund', 'other',
+        ])->pluck('id', 'code');
 
-        // Balance inicial
-        $movements[] = [
-            'created_at' => $startDate->copy()->setTime(8, 0, 0),
-            'type' => 'other',
-            'amount' => 50000,
-            'description' => 'Balance inicial de caja',
-            'balance_after' => 50000,
-            'user_id' => $adminUser->id,
-            'updated_at' => now(),
-        ];
-        $runningBalance = 50000;
+        $movements   = [];
+        $balance     = 0;
+        $startDate   = Carbon::today()->subDays(30);
 
-        // Crear movimientos basados en pagos existentes
-        $payments = Payment::where('amount', '>', 0)->get();
+        // Balance inicial de caja
+        $balance += 50000;
+        $movements[] = $this->row(
+            $types['other'],
+            50000,
+            'Balance inicial de caja',
+            $balance,
+            $adminUser->id,
+            $startDate->copy()->setTime(8, 0, 0)
+        );
+
+        // Movimientos por pagos de pacientes confirmados
+        $payments = Payment::where('status', 'confirmed')
+            ->where('payment_type', '!=', 'refund')
+            ->where('total_amount', '>', 0)
+            ->get();
+
         foreach ($payments as $payment) {
-            $runningBalance += $payment->amount;
-            $movements[] = [
-                'created_at' => $payment->payment_date,
-                'type' => 'patient_payment',
-                'amount' => $payment->amount,
-                'description' => "Pago de paciente - {$payment->concept}",
-                'reference_type' => 'Payment',
-                'reference_id' => $payment->id,
-                'balance_after' => $runningBalance,
-                'user_id' => $adminUser->id,
-                'updated_at' => now(),
-            ];
+            $typeId   = $types['patient_payment'];
+            $balance += $payment->total_amount;
+            $movements[] = $this->row(
+                $typeId,
+                $payment->total_amount,
+                "Pago de paciente - {$payment->concept}",
+                $balance,
+                $adminUser->id,
+                $payment->payment_date,
+                'App\\Models\\Payment',
+                $payment->id
+            );
         }
 
-        // Crear algunos gastos aleatorios
+        // Gastos operativos
         $expenses = [
-            ['desc' => 'Pago de alquiler', 'amount' => -25000],
-            ['desc' => 'Servicios públicos', 'amount' => -8500],
-            ['desc' => 'Compra de suministros médicos', 'amount' => -12000],
-            ['desc' => 'Mantenimiento de equipos', 'amount' => -5500],
-            ['desc' => 'Material de oficina', 'amount' => -2800],
-            ['desc' => 'Limpieza del consultorio', 'amount' => -3200],
-            ['desc' => 'Internet y telefonía', 'amount' => -4500],
-            ['desc' => 'Seguros', 'amount' => -7800],
-            ['desc' => 'Combustible', 'amount' => -3000],
-            ['desc' => 'Publicidad', 'amount' => -4200],
+            ['desc' => 'Pago de alquiler',              'amount' => -25000],
+            ['desc' => 'Servicios públicos',             'amount' => -8500],
+            ['desc' => 'Compra de insumos médicos',      'amount' => -12000],
+            ['desc' => 'Mantenimiento de equipos',       'amount' => -5500],
+            ['desc' => 'Material de oficina',            'amount' => -2800],
+            ['desc' => 'Limpieza del consultorio',       'amount' => -3200],
+            ['desc' => 'Internet y telefonía',           'amount' => -4500],
+            ['desc' => 'Seguros',                        'amount' => -7800],
+            ['desc' => 'Combustible',                    'amount' => -3000],
+            ['desc' => 'Publicidad',                     'amount' => -4200],
         ];
 
         foreach ($expenses as $expense) {
-            $expenseDate = $startDate->copy()->addDays(rand(1, 25))->setTime(rand(10, 16), rand(0, 59));
-            $runningBalance += $expense['amount'];
-
-            $movements[] = [
-                'created_at' => $expenseDate,
-                'type' => 'expense',
-                'amount' => $expense['amount'],
-                'description' => $expense['desc'],
-                'balance_after' => $runningBalance,
-                'user_id' => $adminUser->id,
-                'updated_at' => now(),
-            ];
+            $date     = $startDate->copy()->addDays(rand(1, 25))->setTime(rand(10, 16), rand(0, 59));
+            $balance += $expense['amount'];
+            $movements[] = $this->row(
+                $types['expense'],
+                $expense['amount'],
+                $expense['desc'],
+                $balance,
+                $adminUser->id,
+                $date
+            );
         }
 
-        // Crear algunos pagos a profesionales
+        // Pagos a profesionales
         $professionalPayments = [
-            ['desc' => 'Pago comisión Dr. Juan Pérez', 'amount' => -8500],
-            ['desc' => 'Pago comisión Dra. María González', 'amount' => -12000],
-            ['desc' => 'Pago comisión Dr. Carlos Martínez', 'amount' => -9200],
-            ['desc' => 'Pago comisión Dra. Ana Rodríguez', 'amount' => -10800],
+            ['desc' => 'Liquidación comisión Dr. Juan Pérez',     'amount' => -8500],
+            ['desc' => 'Liquidación comisión Dra. María González', 'amount' => -12000],
+            ['desc' => 'Liquidación comisión Dr. Carlos Martínez', 'amount' => -9200],
+            ['desc' => 'Liquidación comisión Dra. Ana Rodríguez',  'amount' => -10800],
         ];
 
-        foreach ($professionalPayments as $payment) {
-            $paymentDate = $startDate->copy()->addDays(rand(5, 28))->setTime(rand(14, 17), rand(0, 59));
-            $runningBalance += $payment['amount'];
-
-            $movements[] = [
-                'created_at' => $paymentDate,
-                'type' => 'professional_payment',
-                'amount' => $payment['amount'],
-                'description' => $payment['desc'],
-                'balance_after' => $runningBalance,
-                'user_id' => $adminUser->id,
-                'updated_at' => now(),
-            ];
+        foreach ($professionalPayments as $pp) {
+            $date     = $startDate->copy()->addDays(rand(5, 28))->setTime(rand(14, 17), rand(0, 59));
+            $balance += $pp['amount'];
+            $movements[] = $this->row(
+                $types['professional_payment'],
+                $pp['amount'],
+                $pp['desc'],
+                $balance,
+                $adminUser->id,
+                $date
+            );
         }
 
-        // Incluir movimientos de reembolsos
-        $refunds = Payment::where('amount', '<', 0)->get();
+        // Reembolsos
+        $refunds = Payment::where('payment_type', 'refund')->where('total_amount', '<', 0)->get();
         foreach ($refunds as $refund) {
-            $runningBalance += $refund->amount;
-            $movements[] = [
-                'created_at' => $refund->payment_date,
-                'type' => 'refund',
-                'amount' => $refund->amount,
-                'description' => "Reembolso a paciente - {$refund->concept}",
-                'reference_type' => 'Payment',
-                'reference_id' => $refund->id,
-                'balance_after' => $runningBalance,
-                'user_id' => $adminUser->id,
-                'updated_at' => now(),
-            ];
+            $balance += $refund->total_amount;
+            $movements[] = $this->row(
+                $types['refund'],
+                $refund->total_amount,
+                "Reembolso a paciente - {$refund->concept}",
+                $balance,
+                $adminUser->id,
+                $refund->payment_date,
+                'App\\Models\\Payment',
+                $refund->id
+            );
         }
 
-        // Ordenar movimientos por fecha
-        usort($movements, function ($a, $b) {
-            return strcmp($a['created_at'], $b['created_at']);
-        });
+        // Ordenar por fecha y recalcular balance en orden cronológico
+        usort($movements, fn ($a, $b) => strcmp($a['created_at'], $b['created_at']));
 
-        // Recalcular balances en orden cronológico
-        $balance = 0;
-        foreach ($movements as &$movement) {
-            $balance += $movement['amount'];
-            $movement['balance_after'] = $balance;
+        $runningBalance = 0;
+        foreach ($movements as &$m) {
+            $runningBalance += $m['amount'];
+            $m['balance_after'] = $runningBalance;
         }
+        unset($m);
 
-        // Insertar todos los movimientos
-        foreach ($movements as $movement) {
-            CashMovement::create($movement);
-        }
+        DB::table('cash_movements')->insert($movements);
+    }
+
+    private function row(
+        int $typeId,
+        float $amount,
+        string $description,
+        float $balanceAfter,
+        int $userId,
+        Carbon $date,
+        ?string $referenceType = null,
+        ?int $referenceId = null
+    ): array {
+        return [
+            'movement_type_id' => $typeId,
+            'amount'           => $amount,
+            'description'      => $description,
+            'reference_type'   => $referenceType,
+            'reference_id'     => $referenceId,
+            'balance_after'    => $balanceAfter,
+            'user_id'          => $userId,
+            'created_at'       => $date->toDateTimeString(),
+            'updated_at'       => $date->toDateTimeString(),
+        ];
     }
 }

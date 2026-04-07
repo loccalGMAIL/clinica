@@ -17,7 +17,9 @@ class Profile extends Model
         'agenda'        => 'Agenda',
         'cash'          => 'Caja',
         'payments'      => 'Cobros',
+        'clinical'      => 'Hist. Clínicas',
         'reports'       => 'Reportes',
+        'professional'  => 'Portal Profesional',
         'configuration' => 'Configuración',
         'system'        => 'Sistema',
     ];
@@ -46,5 +48,15 @@ class Profile extends Model
     public function allowsModule(string $module): bool
     {
         return $this->modules->contains('module', $module);
+    }
+
+    /**
+     * Nivel jerárquico del perfil (3=SuperAdmin, 2=Admin, 1=Estándar)
+     */
+    public function hierarchyLevel(): int
+    {
+        if ($this->allowsModule('system')) return 3;
+        if ($this->allowsModule('configuration')) return 2;
+        return 1;
     }
 }
