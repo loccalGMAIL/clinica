@@ -23,8 +23,8 @@ class AppointmentSeeder extends Seeder
 
         $appointments = [];
 
-        // Citas pasadas (últimos 7 días)
-        for ($i = 7; $i > 0; $i--) {
+        // Citas pasadas (últimos 6 meses)
+        for ($i = 180; $i > 0; $i--) {
             $date = Carbon::today()->subDays($i);
             $appointments = array_merge($appointments, $this->createAppointmentsForDate($date, $professionals, $patients, $offices, true));
         }

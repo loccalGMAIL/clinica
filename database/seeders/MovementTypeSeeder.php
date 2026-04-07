@@ -100,6 +100,30 @@ class MovementTypeSeeder extends Seeder
             'order' => 7,
         ]);
 
+        MovementType::create([
+            'code' => 'expense',
+            'name' => 'Gasto',
+            'description' => 'Gasto general de caja',
+            'category' => 'main_type',
+            'affects_balance' => -1,
+            'icon' => '📋',
+            'color' => 'red',
+            'is_active' => true,
+            'order' => 8,
+        ]);
+
+        MovementType::create([
+            'code' => 'other',
+            'name' => 'Otro',
+            'description' => 'Movimiento sin categoría específica',
+            'category' => 'main_type',
+            'affects_balance' => 0,
+            'icon' => '📋',
+            'color' => 'gray',
+            'is_active' => true,
+            'order' => 9,
+        ]);
+
         // ========================================
         // GASTOS (expense_detail)
         // ========================================

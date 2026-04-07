@@ -40,7 +40,10 @@ class DatabaseSeeder extends Seeder
             PaymentSeeder::class,
             CashMovementSeeder::class,
 
-            // 10. Historias clínicas (requieren appointments con status=attended)
+            // 10. Liquidaciones profesionales (requieren appointments y payments)
+            ProfessionalLiquidationSeeder::class,
+
+            // 11. Historias clínicas (requieren appointments con status=attended)
             ClinicalRecordSeeder::class,
 
             // 11. Excepciones de horario

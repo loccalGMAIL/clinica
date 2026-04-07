@@ -4,19 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Setting;
 use App\Services\SettingService;
-<<<<<<< HEAD
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-=======
-use Illuminate\Http\Request;
->>>>>>> 5447877e3f25772c78cfd05f01e0bba68cc97301
 
 class SettingsCenterController extends Controller
 {
     public function __construct(private SettingService $settings) {}
 
-<<<<<<< HEAD
     public function index(): View
     {
         $settings = Setting::where('group', 'center')->pluck('value', 'key');
@@ -63,7 +58,6 @@ class SettingsCenterController extends Controller
 
         foreach (['logo', 'login_bg'] as $imageField) {
             if ($request->hasFile($imageField)) {
-                // Eliminar archivos anteriores con ese nombre (cualquier extensión)
                 foreach (['png', 'jpg', 'jpeg', 'webp', 'svg'] as $ext) {
                     $old = $centerDir . "/{$imageField}.{$ext}";
                     if (file_exists($old)) {

@@ -193,7 +193,7 @@
                     <!-- Footer -->
                     <div class="mt-6 text-center">
                         <p class="text-xs text-gray-500">
-                            {{ setting('center_name', config('app.name')) }} &copy; {{ date('Y') }}
+                            {{ setting('center_name', config('app.name')) }} v{{ config('app.version') }} - &copy; {{ date('Y') }}
                             - Designed by <a target="_blank" href="https://pez.com.ar">Pez</a>
                         </p>
                     </div>
