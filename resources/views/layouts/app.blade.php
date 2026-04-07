@@ -13,7 +13,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600&display=swap" rel="stylesheet" />
-    
+
     <!-- Tema: aplicar ANTES de renderizar para evitar flash -->
     <script>
         (function () {
@@ -137,30 +137,40 @@
                 'title' => 'Reportes',
                 'icon' => '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>',
                 'children' => [
-                    // [
-                    //     'title' => 'Agenda Diaria',
-                    //     'href' => '/reports/daily-schedule'
-                    // ],
                     [
-                        'title' => 'Movimientos de Caja',
-                        'href' => '/reports/cash'
+                        'submenu' => true,
+                        'title' => 'Profesionales',
+                        'children' => [
+                            ['title' => 'Ingresos',    'href' => '/reports/profesionales/ingresos'],
+                            ['title' => 'Consultas',   'href' => '/reports/profesionales/consultas'],
+                            ['title' => 'Comisiones',  'href' => '/reports/profesionales/comisiones'],
+                            ['title' => 'Comparativa', 'href' => '/reports/profesionales/comparativa'],
+                        ],
                     ],
                     [
-                        'title' => 'Análisis de Caja',
-                        'href' => '/cash/report'
+                        'submenu' => true,
+                        'title' => 'Pacientes',
+                        'children' => [
+                            ['title' => 'Ausentismo',      'href' => '/reports/pacientes/ausentismo'],
+                            ['title' => 'Retención',       'href' => '/reports/pacientes/retencion'],
+                            ['title' => 'Frecuencia',      'href' => '/reports/pacientes/frecuencia'],
+                            ['title' => 'Nuevos vs Viejos','href' => '/reports/pacientes/nuevos-viejos'],
+                        ],
                     ],
                     [
-                        'title' => 'Informe de Gastos',
-                        'href' => '/reports/expenses'
+                        'submenu' => true,
+                        'title' => 'Financiero',
+                        'children' => [
+                            ['title' => 'Movimientos de Caja',  'href' => '/reports/cash'],
+                            ['title' => 'Análisis de Caja',     'href' => '/cash/report'],
+                            ['title' => 'Informe de Gastos',    'href' => '/reports/expenses'],
+                            ['title' => 'Liquidaciones Hist.',  'href' => '/reports/liquidaciones-historicas'],
+                            ['title' => 'Métodos de Pago',      'href' => '/reports/pagos/tendencia'],
+                            ['title' => 'Ingresos Obra Social', 'href' => '/reports/ingresos-obra-social'],
+                            ['title' => 'Cobros Pendientes',    'href' => '/reports/cobros-pendientes'],
+                            ['title' => 'Flujo Mensual Caja',   'href' => '/reports/flujo-caja-mensual'],
+                        ],
                     ],
-                    // [
-                    //     'title' => 'Reporte de Profesionales',
-                    //     'href' => '/reports/professionals'
-                    // ],
-                    // [
-                    //     'title' => 'Reporte de Pacientes',
-                    //     'href' => '/reports/patients'
-                    // ]
                 ]
             ];
         }
@@ -316,9 +326,12 @@
             </div>
             @endif
 
-            <!-- Top bar: fecha + tema -->
+            <!-- Top bar: fecha + versión + tema -->
+            @php $appVersion = trim(file_get_contents(base_path('VERSION'))) ?: '—'; @endphp
             <div class="flex items-center justify-end gap-3 px-4 py-1.5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                 <span class="text-xs text-gray-400 dark:text-gray-500">{{ now()->translatedFormat('d \d\e F \d\e Y') }}</span>
+                <span class="text-xs text-gray-300 dark:text-gray-600 select-none">·</span>
+                <span class="text-xs text-gray-400 dark:text-gray-500 font-mono">v{{ $appVersion }}</span>
                 <div x-data="themeToggle()">
                     <button @click="cycle()" :title="label"
                             class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-800 transition-colors duration-200">
@@ -329,6 +342,7 @@
 
             <!-- Page content -->
             <main>
+
                 @yield('content')
             </main>
         </div>
@@ -377,6 +391,18 @@
     </script>
 
     @stack('scripts')
+
+    <!-- Fecha actual -->
+    <script>
+        (function () {
+            const date = new Date();
+            const formatted = date.toLocaleDateString('es-AR', {
+                weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+            });
+            const el = document.getElementById('layout-date');
+            if (el) el.textContent = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+        })();
+    </script>
 
     @if(!app()->environment('production'))
     {{-- Driver.js CDN --}}

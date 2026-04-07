@@ -19,6 +19,15 @@ class SettingService
         return $settings[$key] ?? $default;
     }
 
+    public function set(string $key, string $group, mixed $value): void
+    {
+        Setting::updateOrCreate(
+            ['key' => $key],
+            ['group' => $group, 'value' => $value]
+        );
+        $this->clearCache();
+    }
+
     public function clearCache(): void
     {
         Cache::forget(self::CACHE_KEY);

@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ setting('center_name') }}</title>
+    <title>{{ setting('center_name', config('app.name')) }}</title>
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
@@ -15,7 +15,7 @@
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 
 <body class="bg-gradient-to-br from-emerald-50 to-green-100 min-h-screen">
@@ -106,11 +106,23 @@
                     <!-- Logo y título -->
                     <div class="text-center mb-6">
                         <div style="display: flex; justify-content: center; align-items: center; width: 100%;">
-                            <img src="{{ center_image('logo', 'logo.png') }}" alt="Logo"
+                            <img src="{{ center_image('logo', '') }}" alt="{{ setting('center_name', config('app.name')) }}"
                                 style="max-width:200px;max-height:200px;" />
                         </div>
                         <p class="text-gray-600 mt-2">{{ setting('center_subtitle', 'Sistema de Gestión Médica') }}</p>
                     </div>
+
+                    @if($errors->has('center_blocked'))
+                    <div class="mb-4 rounded-lg bg-red-50 border border-red-200 p-4 flex items-start gap-3">
+                        <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                        </svg>
+                        <div>
+                            <p class="text-sm font-semibold text-red-700">Sistema bloqueado</p>
+                            <p class="text-xs text-red-600 mt-0.5">{{ $errors->first('center_blocked') }}</p>
+                        </div>
+                    </div>
+                    @endif
 
                     @if(request('reset'))
                     <div class="mb-5 px-4 py-3 rounded-lg bg-emerald-50 border border-emerald-200 text-sm text-emerald-800">
@@ -181,7 +193,7 @@
                     <!-- Footer -->
                     <div class="mt-6 text-center">
                         <p class="text-xs text-gray-500">
-                            {{ setting('center_name') }} v{{ config('app.version') }} - &copy; {{ date('Y') }}
+                            {{ setting('center_name', config('app.name')) }} v{{ config('app.version') }} - &copy; {{ date('Y') }}
                             - Designed by <a target="_blank" href="https://pez.com.ar">Pez</a>
                         </p>
                     </div>

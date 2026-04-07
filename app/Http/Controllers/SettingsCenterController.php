@@ -4,70 +4,73 @@ namespace App\Http\Controllers;
 
 use App\Models\Setting;
 use App\Services\SettingService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class SettingsCenterController extends Controller
 {
     public function __construct(private SettingService $settings) {}
 
-    public function index()
+    public function index(): View
     {
-        $settings = Setting::center()->get()->pluck('value', 'key');
+        $settings = Setting::where('group', 'center')->pluck('value', 'key');
 
-        return view('settings.center.index', compact('settings'));
+        return view('settings.center', compact('settings'));
     }
 
-    public function update(Request $request)
+    public function toggle(): RedirectResponse
+    {
+        $current = $this->settings->get('center_active', '1');
+        $newValue = $current === '1' ? '0' : '1';
+
+        $this->settings->set('center_active', 'center', $newValue);
+
+        $message = $newValue === '1'
+            ? 'El sistema ha sido habilitado.'
+            : 'El sistema ha sido bloqueado. Solo el Administrador puede ingresar.';
+
+        return redirect()->route('settings.center')->with('success', $message);
+    }
+
+    public function update(Request $request): RedirectResponse
     {
         $request->validate([
-            'center_name'     => 'nullable|string|max:100',
-            'center_subtitle' => 'nullable|string|max:100',
-            'center_address'  => 'nullable|string|max:200',
-            'center_phone'    => 'nullable|string|max:50',
-            'center_email'    => 'nullable|email|max:100',
-            'logo'            => 'nullable|image|mimes:png,jpg,jpeg,webp,svg|max:2048',
-            'login_bg'        => 'nullable|image|mimes:png,jpg,jpeg,webp|max:5120',
+            'center_name'     => 'required|string|max:255',
+            'center_subtitle' => 'nullable|string|max:255',
+            'center_address'  => 'nullable|string|max:255',
+            'center_phone'    => 'nullable|string|max:100',
+            'center_email'    => 'nullable|email|max:255',
+            'logo'            => 'nullable|file|mimes:png,jpg,jpeg,webp,svg|max:2048',
+            'login_bg'        => 'nullable|file|mimes:png,jpg,jpeg,webp|max:4096',
         ]);
 
-        // Guardar campos de texto
         $textFields = ['center_name', 'center_subtitle', 'center_address', 'center_phone', 'center_email'];
-        foreach ($textFields as $field) {
-            Setting::updateOrCreate(
-                ['key' => $field],
-                ['group' => 'center', 'value' => $request->input($field)]
-            );
+
+        foreach ($textFields as $key) {
+            $this->settings->set($key, 'center', $request->input($key, ''));
         }
 
-        // Procesar imágenes
-        $centerPath = public_path('center');
-        if (! is_dir($centerPath)) {
-            mkdir($centerPath, 0755, true);
+        $centerDir = public_path('center');
+        if (! is_dir($centerDir)) {
+            mkdir($centerDir, 0755, true);
         }
 
-        if ($request->hasFile('logo')) {
-            $this->replaceImage($centerPath, 'logo', $request->file('logo'));
-        }
+        foreach (['logo', 'login_bg'] as $imageField) {
+            if ($request->hasFile($imageField)) {
+                foreach (['png', 'jpg', 'jpeg', 'webp', 'svg'] as $ext) {
+                    $old = $centerDir . "/{$imageField}.{$ext}";
+                    if (file_exists($old)) {
+                        unlink($old);
+                    }
+                }
 
-        if ($request->hasFile('login_bg')) {
-            $this->replaceImage($centerPath, 'login_bg', $request->file('login_bg'));
-        }
-
-        $this->settings->clearCache();
-
-        return redirect()->route('settings.center')->with('success', 'Configuración del centro guardada correctamente.');
-    }
-
-    private function replaceImage(string $dir, string $name, $file): void
-    {
-        // Eliminar archivos anteriores del mismo nombre (cualquier extensión)
-        foreach (['png', 'jpg', 'jpeg', 'webp', 'svg'] as $ext) {
-            $existing = "{$dir}/{$name}.{$ext}";
-            if (file_exists($existing)) {
-                unlink($existing);
+                $file = $request->file($imageField);
+                $ext  = $file->getClientOriginalExtension();
+                $file->move($centerDir, "{$imageField}.{$ext}");
             }
         }
 
-        $ext = strtolower($file->getClientOriginalExtension());
-        $file->move($dir, "{$name}.{$ext}");
+        return redirect()->route('settings.center')->with('success', 'Configuración del centro guardada correctamente.');
     }
 }

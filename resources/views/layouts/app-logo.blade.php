@@ -22,7 +22,7 @@ $textSizeClasses = match($size) {
 
 <div class="flex items-center">
 
-    <img src="{{ center_image('logo', 'logo.png') }}" alt="Logo">
+    <img src="{{ center_image('logo', '') }}" alt="{{ setting('center_name', config('app.name')) }}">
     
 
 </div>

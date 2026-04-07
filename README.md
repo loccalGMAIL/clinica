@@ -2,7 +2,7 @@
 
 [![Laravel](https://img.shields.io/badge/Laravel-12.x-red?style=flat\&logo=laravel)](https://laravel.com)
 [![PHP](https://img.shields.io/badge/PHP-8.2-blue?style=flat\&logo=php)](https://php.net)
-[![Version](https://img.shields.io/badge/Version-2.9.4-green?style=flat)](#changelog)
+[![Version](https://img.shields.io/badge/Version-2.10.4-green?style=flat)](#changelog)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=flat)](#license)
 
 Sistema integral de gestión médica para clínicas y consultorios, desarrollado con Laravel 12 y tecnologías modernas.
@@ -17,6 +17,12 @@ Sistema integral de gestión médica para clínicas y consultorios, desarrollado
 * [Contribución](#contribución)
 
 ## ✨ Características
+
+### ⚙️ Configuración del Centro (v2.10.2)
+
+* **Menú Sistema > General**: configuración centralizada del centro médico (nombre, dirección, teléfono, email, logo, imagen de login).
+* **Bloqueo de acceso**: switch para suspender el acceso de todos los usuarios excepto el Administrador del sistema (útil ante problemas de pago u operativos).
+* Datos del centro dinámicos en toda la aplicación: login, sidebar, recibos, reportes.
 
 ### 🎯 Gestión de Turnos
 
@@ -65,6 +71,7 @@ Sistema integral de gestión médica para clínicas y consultorios, desarrollado
 
 * Registro completo de información personal y médica
 * **Formato de visualización profesional**: Apellido, Nombre
+* **Teléfono Fijo** (v2.10.3): campo opcional adicional al teléfono móvil, visible en índice y ficha de paciente
 * Historial de citas y tratamientos
 * Seguimiento de pagos y saldos
 
@@ -81,7 +88,9 @@ Sistema integral de gestión médica para clínicas y consultorios, desarrollado
 * Vista en tiempo real del día actual
 * Liquidación diaria de profesionales
 * Reportes optimizados para impresión y control administrativo
-* **Exportación de reportes de caja** a Excel (CSV) y PDF
+* **Exportación de reportes de caja** a Excel (CSV estructurado) e impresión via navegador
+* **Módulo de Informes Analíticos** (v2.10.0): 13 informes históricos agrupados en Profesionales, Pacientes y Financiero; todos con impresión directa, gráficos Chart.js y submenús colapsables en la navegación
+* **UX de impresión estandarizada** (v2.10.4): todas las vistas print cierran automáticamente la pestaña tras imprimir (`afterprint`); corregido bug de doble diálogo en 8 reportes
 
 ## 🛠 Tecnologías
 
@@ -151,6 +160,14 @@ php artisan config:clear
 
 ### 🔄 Últimas versiones
 
+* **v2.10.4** (2026-04-07) – 🖨️ Fix impresión doble en reportes: corregido bug donde el diálogo de impresión se mostraba dos veces; estandarizado comportamiento `afterprint` con cierre automático de pestaña en todas las vistas print (19 vistas).
+* **v2.10.3** (2026-04-04) – 📅 Persistencia de fecha en Agenda: al crear/modificar un turno se conserva el día seleccionado en lugar de volver siempre a hoy. 📞 Teléfono Fijo en Pacientes: nuevo campo opcional `phone_landline` en formulario, índice y ficha.
+* **v2.10.2** (2026-03-26) – 🔒 Fix CSRF 419: manejo explícito de sesión expirada en todos los formularios Alpine.js; toast de advertencia + redirección automática al login en 8 módulos (pacientes, profesionales, turnos, agenda, pagos, caja).
+* **v2.10.1** (2026-03-26) – 🔐 Revisión de Seguridad: middleware de módulos en rutas core, fix bug crítico `payment_type='expense'`, eliminación de log de datos sensibles, fix IDOR en notas de profesionales. 138 tests unitarios con 13 factories nuevas cubriendo modelos y servicios clave.
+* **v2.10.0** (2026-03-26) – 📊 Módulo de Informes Analíticos: 13 nuevos reportes históricos (Profesionales, Pacientes, Financiero) con Chart.js, impresión universal y menú de Reportes reestructurado en submenús colapsables.
+* **v2.9.5** (2026-03-23) – 💰 Mejoras en vistas de Liquidación Profesional: totales de comisión explícitos, estilo minimalista en detalle de cobros, header de impresión rediseñado con logo.
+* **v2.9.4-2** (2026-03-10) – 🎨 UX Caja: formularios compactados con acordeón para notas/comprobante. 🌙 Toggle de tema claro/oscuro: barra persistente con fecha, versión del sistema y botón sol/luna; preferencia guardada en `localStorage`, light por defecto.
+* **v2.9.4-1** (2026-03-07) – 🔧 Refactoring MovementType: eliminación de jerarquía padre/hijo, reclasificación de `refund` a gastos, retiros incluidos en Informe de Gastos, Excel mejorado con secciones y formato argentino, eliminación de botón PDF y DomPDF.
 * **v2.9.4** (2026-03-05) – 🖨️ Listado Diario: sistema de impresión estándar (layout/print + header con logo), auto-impresión y auto-cierre de pestaña, fix botón imprimir en cards de selección, fix conteo de pacientes sin cancelados.
 * **v2.9.3-1** (2026-03-04) – 🐛 Fix: permitir creación de turnos en sábados cuando el profesional tiene horario configurado para ese día.
 * **v2.9.3** (2026-03-01) – 🗓️ Agenda en dos columnas: panel de día inline (reemplaza modal overlay), mini-calendario con celdas cuadradas y tooltip de leyenda, auto-apertura del día actual, header del panel rediseñado.

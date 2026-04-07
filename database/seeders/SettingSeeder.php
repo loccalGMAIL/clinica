@@ -9,18 +9,19 @@ class SettingSeeder extends Seeder
 {
     public function run(): void
     {
-        $defaults = [
+        $settings = [
             ['key' => 'center_name',     'value' => 'Centro de Atención Médica'],
             ['key' => 'center_subtitle', 'value' => 'Sistema de Gestión Médica'],
             ['key' => 'center_address',  'value' => 'Tucumán 925, Cosquín'],
             ['key' => 'center_phone',    'value' => '(3541) 705-281'],
             ['key' => 'center_email',    'value' => 'contacto@ejemplo.com'],
+            ['key' => 'center_active',   'value' => '1'],
         ];
 
-        foreach ($defaults as $data) {
+        foreach ($settings as $item) {
             Setting::firstOrCreate(
-                ['key' => $data['key']],
-                ['group' => 'center', 'value' => $data['value']]
+                ['key' => $item['key']],
+                ['group' => 'center', 'value' => $item['value']]
             );
         }
     }

@@ -29,10 +29,10 @@ class PaymentSeeder extends Seeder
 
     private function createSinglePayments($patients, $adminUser): void
     {
-        for ($i = 0; $i < 20; $i++) {
+        for ($i = 0; $i < 60; $i++) {
             $patient     = $patients->random();
             $amount      = rand(8000, 25000);
-            $paymentDate = Carbon::today()->subDays(rand(0, 30))->setTime(rand(8, 18), 0);
+            $paymentDate = Carbon::today()->subDays(rand(0, 180))->setTime(rand(8, 18), 0);
 
             $payment = Payment::create([
                 'patient_id'         => $patient->id,
@@ -63,7 +63,7 @@ class PaymentSeeder extends Seeder
             $sessionsUsed = rand(0, min($sessions, 4));
             $pricePerSession = rand(8000, 12000);
             $amount       = $sessions * $pricePerSession;
-            $paymentDate  = Carbon::today()->subDays(rand(0, 60))->setTime(rand(8, 18), 0);
+            $paymentDate  = Carbon::today()->subDays(rand(0, 180))->setTime(rand(8, 18), 0);
 
             $payment = Payment::create([
                 'patient_id'         => $patient->id,

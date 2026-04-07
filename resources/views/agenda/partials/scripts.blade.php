@@ -108,9 +108,9 @@ document.addEventListener('alpine:init', () => {
                 this.openDayModal(event.detail.date, event.detail.professionalId);
             });
 
-            // AUTO: abrir el día actual si hay profesional seleccionado
+            // AUTO: abrir el día seleccionado (o hoy si no hay parámetro) si hay profesional seleccionado
             @if($selectedProfessional)
-            this.openDayModal('{{ today()->format('Y-m-d') }}', {{ $selectedProfessional }});
+            this.openDayModal('{{ $selectedDate }}', {{ $selectedProfessional }});
             @endif
         },
 
@@ -274,11 +274,19 @@ document.addEventListener('alpine:init', () => {
 
                 const result = await response.json();
 
-                if (response.ok && result.success) {
+                if (response.status === 419) {
+                    this.showNotification(result.message || 'Tu sesión ha expirado. Redirigiendo...', 'warning');
+                    setTimeout(() => { window.location.href = result.redirect || '/login'; }, 1500);
+                } else if (response.ok && result.success) {
                     this.modalOpen = false;
                     this.showNotification(result.message, 'success');
-                    // Reload page to show changes
-                    setTimeout(() => window.location.reload(), 1000);
+                    // Reload page preservando la fecha seleccionada
+                    setTimeout(() => {
+                        const url = new URL(window.location.href);
+                        const dateToPreserve = this.selectedDayDate || this.form.appointment_date || '';
+                        if (dateToPreserve) url.searchParams.set('date', dateToPreserve);
+                        window.location.href = url.toString();
+                    }, 1000);
                 } else {
                     if (response.status === 422 && result.errors) {
                         this.setErrors(result.errors);
@@ -813,7 +821,7 @@ document.addEventListener('alpine:init', () => {
         async deleteNote(id) {
             if (!confirm('¿Eliminar esta nota?')) return;
             try {
-                const url = `/professional-notes/${id}`;
+                const url = `/professionals/${this.professionalId}/notes/${id}`;
                 const response = await fetch(url, {
                     method: 'DELETE',
                     headers: {
@@ -956,7 +964,10 @@ function patientModal() {
                         location.reload();
                     }, 500);
                 } else {
-                    if (response.status === 422 && result.errors) {
+                    if (response.status === 419) {
+                        window.showToast(result.message || 'Tu sesión ha expirado. Redirigiendo...', 'warning');
+                        setTimeout(() => { window.location.href = result.redirect || '/login'; }, 1500);
+                    } else if (response.status === 422 && result.errors) {
                         const errorMessages = Object.values(result.errors).flat().join('\n');
                         window.showToast('Errores de validación: ' + errorMessages, 'error');
                     } else {

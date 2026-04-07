@@ -104,9 +104,6 @@ class AppointmentController extends Controller
     public function store(Request $request)
     {
         try {
-            // Log temporal para debug
-            \Log::info('Appointment creation attempt', $request->all());
-
             $validated = $request->validate([
                 'professional_id' => 'required|exists:professionals,id',
                 'patient_id' => 'required|exists:patients,id',
@@ -253,7 +250,7 @@ class AppointmentController extends Controller
                 return response()->json(['success' => true, 'message' => $message]);
             }
 
-            return redirect()->route('appointments.index')->with('success', $message);
+            return redirect()->back()->with('success', $message);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -380,7 +377,7 @@ class AppointmentController extends Controller
                 return response()->json(['success' => true, 'message' => 'Turno actualizado exitosamente.']);
             }
 
-            return redirect()->route('appointments.index')->with('success', 'Turno actualizado exitosamente.');
+            return redirect()->back()->with('success', 'Turno actualizado exitosamente.');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             if ($request->ajax()) {
@@ -484,7 +481,7 @@ class AppointmentController extends Controller
                 return response()->json(['success' => true, 'message' => $message]);
             }
 
-            return redirect()->route('appointments.index')->with('success', $message);
+            return redirect()->back()->with('success', $message);
 
         } catch (\Exception $e) {
             DB::rollBack();

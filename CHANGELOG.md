@@ -7,6 +7,286 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ---
 
+## [2.10.4] - 2026-04-07
+
+### 🖨️ Fix: impresión doble en reportes
+
+- **Bug corregido**: al acceder a cualquier reporte print con `?print=1`, el diálogo de impresión del navegador se mostraba dos veces. La causa era que `layouts/print.blade.php` llamaba a `window.print()` vía `addEventListener('load')` **y** cada vista print también tenía su propio script con `window.print()` en `@push('scripts')`.
+- **Solución**: eliminado el bloque auto-print del layout (`layouts/print.blade.php`). Cada vista gestiona su propio auto-print, evitando la duplicación.
+
+### ✨ UX: cierre automático de pestaña tras imprimir (afterprint)
+
+- **Estandarizado el comportamiento post-impresión** en las 19 vistas que extienden `layouts.print`: todas ahora escuchan el evento `afterprint` para cerrar la pestaña automáticamente al finalizar (o cancelar) la impresión, con un fallback de 3 segundos.
+- **8 vistas sin script propio** (`pagos-tendencia`, `pacientes-retencion`, `pacientes-nuevos-viejos`, `pacientes-frecuencia`, `pacientes-ausentismo`, `ingresos-obra-social`, `flujo-caja-mensual`, `cobros-pendientes`): se les agrega `@push('scripts')` con el patrón estándar (`print=1` → `window.print()` + `afterprint` + `close()`).
+- **2 vistas Alpine.js** (`cash/daily-report`, `cash/count-report`): se reemplaza el `setTimeout(() => window.close(), 500)` por el listener `afterprint` con fallback de 3 segundos, igualando el comportamiento del resto.
+
+---
+
+## [2.10.3] - 2026-04-04
+
+### 📅 Persistencia de fecha en Agenda
+
+- **Problema corregido**: al crear o modificar un turno desde la Agenda, la página siempre volvía al día de hoy al recargar, perdiendo el día que el usuario estaba editando.
+- **`AgendaController`**: ahora lee el parámetro `?date=YYYY-MM-DD` de la URL, lo valida con Carbon y lo pasa a la vista como `$selectedDate` (por defecto: hoy).
+- **`agenda/partials/scripts.blade.php`**: al guardar exitosamente un turno, en lugar de `window.location.reload()` ahora navega a la misma URL preservando `?date=<fecha seleccionada>`.
+- **`agenda/index.blade.php`**: el `init()` de Alpine usa `$selectedDate` en lugar de `today()`. El formulario de cambio de profesional también incluye el parámetro `date` como hidden input para preservarlo al cambiar de profesional.
+- **`AppointmentController`**: los tres `redirect()->route('appointments.index')` en `store`, `update` y `storeUrgency` cambiados a `redirect()->back()` para preservar los filtros de fecha activos en la vista de Turnos.
+
+### 📞 Teléfono Fijo en Pacientes
+
+- **Nuevo campo `phone_landline`** (VARCHAR 50, opcional) en la tabla `patients`, posicionado junto al `phone` existente.
+- El campo existente `phone` ("Teléfono") no se modifica ni se hace obligatorio; `phone_landline` es completamente opcional.
+- **Formulario de paciente**: grilla de contacto ampliada a 4 columnas — Teléfono, Teléfono Fijo, Email, Dirección. Mismo patrón de validación visual (bordes rojos + mensaje de error) que el resto de los campos.
+- **Vista índice**: el teléfono fijo aparece debajo del móvil en tarjetas (móvil) y en la columna Contacto (escritorio), solo cuando tiene valor (`x-show`).
+- **Vista detalle del paciente**: bloque condicional que muestra "Teléfono Fijo" solo si el paciente tiene uno registrado.
+- **Búsqueda**: el campo `phone_landline` se incluye en el `scopeSearch` del modelo y en el `orWhere` del controlador, permitiendo buscar pacientes por número fijo.
+
+---
+
+## [2.10.2] - 2026-04-04
+
+### ⚙️ Configuración dinámica del centro
+
+- **Menú Sistema > General** — nueva sección de configuraciones del sistema, accesible solo para el perfil con módulo `system`.
+- **Pantalla "Configuración del Centro"** (`/settings/center`): permite editar nombre, subtítulo, dirección, teléfono y email del centro, así como subir el logo y la imagen de fondo del login. Los cambios se reflejan en toda la aplicación sin necesidad de tocar código.
+- **Tabla `settings`** (key/value) con `SettingService` (singleton, caché 5 min) y helper global `setting('key', default)`.
+- **Helper `center_image('name')`**: resuelve imágenes desde `public/center/` con cache-busting automático por `filemtime`.
+- **Datos dinámicos** reemplazados en: título y footer del login, logo del sidebar, encabezados de recibos de pago e ingreso, encabezado y footer del reporte de liquidación profesional, componente `report-print-header` (usado por todos los reportes).
+
+### 🔒 Bloqueo de acceso al sistema
+
+- **Switch habilitado/bloqueado** en la pantalla de configuración del centro.
+  - Al **bloquear**: solo usuarios con módulo `system` pueden ingresar; el resto es rechazado con mensaje *"Sistema bloqueado. Contacte al Administrador"* al intentar iniciar sesión.
+  - Al **habilitar**: acceso normal para todos los perfiles.
+- **`CheckCenterActive` middleware** aplicado globalmente: desconecta y redirige al login a cualquier usuario activo sin módulo `system` si el centro se bloquea mientras está navegando.
+- Confirmación obligatoria antes de ejecutar el bloqueo (modal Alpine.js).
+
+### 🐛 Correcciones
+
+- **Logo no visible en reportes**: el logo estaba en `public/center/logo.png` pero las vistas apuntaban a `public/logo.png` (inexistente). Corregido en todos los reportes y recibos mediante `center_image()`.
+- **Nav mostraba usuario incorrecto**: `nav-user.blade.php` usaba `$user ?? auth()->user()`, pero `@include` hereda el scope de la vista padre. Si alguna vista pasaba `$user` (ej. `users.profile`), ese valor pisaba al usuario autenticado. Corregido usando `$navUser = auth()->user()` siempre.
+
+### ✨ Mejoras de UX
+
+- **Ícono de ojo en campos de contraseña**: toggle mostrar/ocultar en los campos de contraseña del login, gestión de usuarios y perfil de usuario. Ícono cambia según el estado (ojo abierto = oculto, ojo tachado = visible).
+- **Fix: contraseña visible en login**: Alpine.js no estaba cargado en la vista standalone del login (no extiende `layouts.app`), causando que el binding `:type` no funcionara y la contraseña se mostrara en texto plano. Se agrega Alpine.js CDN directamente en el `<head>` del login.
+- **Fix: "Recordarme" no funcionaba**: `Auth::attempt()` no recibía el flag `remember`. Corregido pasando `$request->boolean('remember')`.
+
+---
+
+### 🔒 Fix CSRF 419 — Manejo de sesión expirada en formularios
+
+#### Problema
+En conexiones inestables (principalmente inalámbricas) la sesión en base de datos puede expirar o invalidarse mientras el usuario tiene un formulario abierto. Al intentar guardar, Laravel devuelve un **419 TokenMismatchException**, pero el frontend lo trataba como un error genérico: mostraba un toast inespecífico y la página quedaba bloqueada sin indicarle al usuario qué hacer.
+
+#### Corrección
+Se agregó manejo explícito del código HTTP 419 en los métodos de submit de todos los módulos con formularios Alpine.js. Cuando ocurre el error de sesión, ahora se muestra un toast de advertencia *"Tu sesión ha expirado. Redirigiendo..."* y a los 1,5 segundos se redirige automáticamente al login usando la URL devuelta por el servidor en `result.redirect`.
+
+**Archivos corregidos:**
+- `resources/views/patients/index.blade.php` — `submitForm()`
+- `resources/views/professionals/index.blade.php` — `submitForm()`
+- `resources/views/appointments/index.blade.php` — `submitForm()`
+- `resources/views/agenda/partials/scripts.blade.php` — `submitForm()` y `addPatient()`
+- `resources/views/payments/index.blade.php` — `annulPayment()`
+- `resources/views/cash/expense-form.blade.php` — submit de gastos
+- `resources/views/cash/manual-income-form.blade.php` — submit de ingresos manuales
+- `resources/views/cash/withdrawal-form.blade.php` — submit de retiros
+
+---
+
+## [2.10.1] - 2026-03-26
+
+### 🔐 Revisión de Seguridad y Cobertura de Tests
+
+#### Seguridad
+- **Middleware de módulos en rutas core**: todas las rutas de `professionals`, `patients`, `appointments`, `agenda`, `payments` y `cash` ahora requieren el middleware `module:X` correspondiente. Previamente cualquier usuario autenticado podía acceder a módulos que no tenía habilitados en su perfil.
+- **Bug crítico `payment_type='expense'`**: `CashController::addExpense()` usaba el valor `'expense'` que no existe en el enum de la tabla `payments`. Corregido a `manual_income` con `total_amount` negativo, eliminando errores silenciosos en MySQL non-strict y errores fatales en MySQL strict.
+- **Log de datos sensibles**: eliminado `\Log::info('Appointment creation attempt', $request->all())` en `AppointmentController::store()` — debug temporal que exponía datos de pacientes y montos en logs de producción.
+- **Versión expuesta en login**: eliminada la versión hardcodeada `v2.2.3` del footer de la vista de login para evitar fingerprinting.
+- **IDOR en notas de profesionales**: ruta `DELETE /professional-notes/{note}` no validaba pertenencia; cambiada a `DELETE /professionals/{professional}/notes/{note}` con validación de ownership en el controller. URL del frontend actualizada en `agenda/partials/scripts.blade.php`.
+- **Filtro obsoleto eliminado**: `PaymentController::index()` filtraba `payment_type != 'expense'` — tipo ya inexistente tras el fix anterior.
+
+#### Correcciones de Migraciones (compatibilidad SQLite/tests)
+- `add_movement_type_id_to_cash_movements_table`: `dropIndex()` antes de `dropColumn('type')`.
+- `drop_movement_date_from_cash_movements_table`: `dropIndex()` antes de `dropColumn('movement_date')`.
+- `restructure_payments_table`: reemplazado `SET FOREIGN_KEY_CHECKS` por `Schema::disable/enableForeignKeyConstraints()`; `receipt_number` ahora nullable.
+- `add_professional_id_to_payment_appointments`: JOIN UPDATE de MySQL reemplazado por subquery portable.
+- `setup_profile_system`: `dropIndex('users_role_index')` antes de `dropColumn('role')`.
+- Nueva migración `add_birthday_to_professionals_table`: columna `birthday` (date, nullable) que faltaba en la tabla `professionals` aunque existía en el modelo.
+- `scopeByDate` en `ProfessionalLiquidation`: cambiado `where()` a `whereDate()` para compatibilidad MySQL/SQLite.
+
+#### Cobertura de Tests (138 tests en total)
+- **10 nuevas factories**: `Specialty`, `Office`, `Package`, `Professional`, `Patient`, `Appointment`, `Payment`, `PaymentDetail`, `PatientPackage`, `PaymentAppointment`.
+- **3 nuevas factories adicionales**: `MovementType`, `CashMovement`, `ProfessionalLiquidation`.
+- **`HasFactory` agregado** a `Package`, `PatientPackage` y `PaymentDetail`.
+- **Tests unitarios de modelos**:
+  - `ProfessionalTest` (14 tests): `calculateCommission`, `getClinicAmount`, accessors, scopes, `hasAppointmentAt`.
+  - `AppointmentTest` (22 tests): `markAsAttended`, `markAsAbsent`, `cancel`, `canBeCancelled`, `conflictsWith`, accessors, scopes.
+  - `PaymentTest` (24 tests): `generateReceiptNumber`, `canBeUsedForAppointment`, `markAsLiquidated`, `cancel`, `confirm`, sumas por receptor, scopes, accessors.
+  - `PatientPackageTest` (24 tests): `useSession`, `returnSession`, `cancel`, `markAsExpired`, `checkExpiration`, todos los accessors y scopes.
+  - `CashMovementTest` (17 tests): `isIncome`, `isExpense`, `isOpening`, `isClosing`, scopes, `getCashStatusForDate`, `isCashOpenToday`, `getCurrentBalanceWithLock`.
+  - `ProfessionalLiquidationTest` (10 tests): `isPaid`, `isPending`, scopes `pending`/`paid`/`byType`/`byDate`, relaciones.
+- **Tests unitarios de servicios**:
+  - `PaymentAllocationServiceTest` (26 tests): `allocateSinglePayment`, `allocatePackageSession`, `checkAndAllocatePayment`, `deallocatePayment`, `getPaymentAllocationSummary`.
+- **Eliminado** `tests/Feature/ExampleTest.php` (placeholder roto de Laravel scaffold).
+
+---
+
+## [2.10.0] - 2026-03-26
+
+### 📊 Módulo de Informes Analíticos
+
+#### Nuevos informes (13 en total) bajo `middleware('module:reports')`
+
+**Profesionales**
+- `reports/profesionales/ingresos` — Ingresos totales por profesional en el período, desglose mensual.
+- `reports/profesionales/consultas` — Estados de turnos por profesional (atendidos, ausentes, cancelados, pendientes, tasa de asistencia).
+- `reports/profesionales/comisiones` — Comisiones liquidadas: facturado, comisión profesional, comisión clínica; desglose mensual.
+- `reports/profesionales/comparativa` — Gráfico de barras agrupado (Chart.js): turnos atendidos + facturado + comisión por profesional.
+
+**Pacientes**
+- `reports/pacientes/ausentismo` — Tasa de inasistencia (ausentes / completados) por profesional.
+- `reports/pacientes/retencion` — Pacientes únicos, tasa de retención, nuevos vs recurrentes, distribución de visitas.
+- `reports/pacientes/frecuencia` — Promedio de días entre visitas consecutivas, agrupado en 5 buckets.
+- `reports/pacientes/nuevos-viejos` — Evolución mensual de pacientes nuevos vs que volvieron (Chart.js stacked bar).
+
+**Financiero**
+- `reports/liquidaciones-historicas` — Historial de liquidaciones con filtros de profesional y estado.
+- `reports/pagos/tendencia` — Evolución mensual por método de pago: Efectivo, Transferencia, Tarjeta, QR (Chart.js).
+- `reports/ingresos-obra-social` — Facturación y turnos agrupados por obra social / financiador.
+- `reports/cobros-pendientes` — Turnos atendidos sin pago registrado, con detalle por profesional.
+- `reports/flujo-caja-mensual` — Ingresos vs egresos mensuales de movimientos de caja (Chart.js).
+
+#### Impresión universal
+- Todos los 13 informes tienen botón **Imprimir** (`bg-gray-600`) en el header.
+- Al presionar, abre una nueva pestaña con la vista `*-print.blade.php` y dispara `window.print()` automáticamente.
+- Las vistas de impresión usan `layouts/print`, `<x-report-print-header>` y clases `.report-table/.report-th/.report-td`.
+- Los informes con Chart.js muestran tablas HTML en la vista de impresión (el canvas tiene `print:hidden`).
+
+#### Navegación — menú Reportes reestructurado
+- Submenú colapsable **Profesionales** (4 ítems).
+- Submenú colapsable **Pacientes** (4 ítems).
+- Submenú colapsable **Financiero** (8 ítems, incluye Movimientos de Caja, Análisis de Caja e Informe de Gastos que antes estaban sueltos).
+- `nav-main.blade.php` actualizado para soportar tipo `submenu` con Alpine.js colapsable y detección de ítem activo recursiva.
+
+#### Versión del sistema
+- `app.blade.php`: la barra superior ahora lee la versión desde el archivo `VERSION` en lugar de `composer.json`.
+
+---
+
+## [2.9.5] - 2026-03-23
+
+### 💰 Mejoras en vistas de Liquidación Profesional
+
+#### `reports/professional-liquidation.blade.php`
+- Se agregan dos nuevas filas al resumen: **"Total de comisión al Profesional (X%)"** y **"Total de comisión a la Clínica (X%)"**, calculadas como porcentaje directo sobre el total facturado, para que la distribución sea inmediatamente legible.
+- Las cajas de colores (azul/amarillo) de "Pagos recibidos por el centro" y "Cobros directos del profesional" se reemplazan por ítems minimalistas `text-xs` en gris, alineados con el estilo del resto del detalle.
+- Label final cambiado de "MONTO A ENTREGAR AL PROFESIONAL" a **"A LIQUIDAR AL PROFESIONAL"**.
+
+#### `reports/professional-liquidation-select.blade.php`
+- Cards de profesionales pendientes: se agrega la fila **"Para la clínica: $X"** entre "Reintegros" y "A liquidar", calculada como `total_collected_by_center - professional_amount`.
+
+#### `reports/professional-liquidation-print.blade.php`
+- Encabezado rediseñado: logo (`logo.png`) alineado a la izquierda junto al nombre del sistema y título del reporte (layout flex, ya no centrado).
+- Resumen del día completo actualizado para coincidir con la vista web: totales de comisión explícitos por porcentaje, detalle minimalista de cobros, y sección de settlement separada.
+
+#### `composer.json`
+- Eliminado el campo `version` (valor `"2.9.4-2"` inválido para Composer). La versión del proyecto se gestiona exclusivamente desde el archivo `VERSION`.
+
+---
+
+## [2.9.4-2] - 2026-03-10
+
+### 🎨 UX — Formularios de Caja compactados y acordeón
+
+#### Vistas afectadas
+- `resources/views/cash/manual-income-form.blade.php`
+- `resources/views/cash/expense-form.blade.php`
+- `resources/views/cash/withdrawal-form.blade.php`
+
+#### Compactación general
+- Padding del contenedor: `p-6` → `p-4 sm:p-6` (responsivo).
+- Cards de campos: `p-6` → `p-4`, grillas `gap-6` → `gap-4`, inputs `py-2.5` → `py-2`.
+- Header reducido a `text-xl`; breadcrumb con íconos `w-3.5`; botón "Volver" `px-3 py-1.5`.
+- Espacio entre secciones: `space-y-6` → `space-y-3`.
+
+#### Acordeón "Notas y comprobante" (Alpine.js)
+- **"Notas adicionales"** y **"Comprobante"** unificados en una sección colapsable, cerrada por defecto (`extrasOpen: false`).
+- En el formulario de Retiro, el acordeón contiene solo "Notas" (sin comprobante, igual que el original).
+- Cabecera clickeable con chevron que rota 180° al abrir/cerrar (`transition-transform duration-200`).
+- Badge `con datos` (verde en Ingreso, rojo en Gasto/Retiro) que aparece automáticamente cuando el acordeón tiene contenido.
+- Transición suave `ease-out 150ms` al expandir y `ease-in 100ms` al colapsar.
+- Si la URL precarga `notes`, el acordeón de Ingreso Manual se abre automáticamente.
+
+#### Mejoras adicionales
+- Drop zone del comprobante más compacta (ícono `w-8` en lugar de `w-12`, menos padding).
+- Archivo adjunto muestra fondo verde con nombre y tamaño formateado.
+- Botones `submit` con spinner de loading en los tres formularios (Gasto y Retiro no lo tenían).
+- `showNotification()` de Retiro reemplazado por `window.showToast()` para consistencia.
+- Alerta ámbar de Retiro con transición de aparición al ingresar monto.
+
+---
+
+### 🌙 Toggle de tema claro / oscuro
+
+#### Problema corregido
+- El dark mode estaba deshabilitado con doble bloqueo en `app.css`: el `@variant dark` usaba `.mode\:dark` (clase inexistente) y un `@media prefers-color-scheme: dark` forzaba `color-scheme: light`. Algunos usuarios veían inconsistencias dependiendo de la configuración de su OS.
+
+#### Solución implementada
+
+**`resources/css/app.css`**
+- `@variant dark` corregido a sintaxis inline de Tailwind CSS 4: `@variant dark (&:is(.dark, .dark *));`
+- Eliminado el bloque `@media (prefers-color-scheme: dark)` que forzaba modo claro.
+- Las clases `dark:` ahora compilan con selector `:is(.dark, .dark *)` en lugar de `@media`.
+
+**`resources/views/layouts/app.blade.php`**
+- Script anti-flash en `<head>` (antes de Alpine): aplica la clase `dark` en `<html>` antes de que el browser pinte, eliminando el flash blanco al recargar en modo oscuro.
+- **Barra superior** añadida encima de `@yield('content')` en todas las vistas, con:
+  - Fecha actual en español (`toLocaleDateString('es-AR')`, formato largo).
+  - Versión del sistema leída desde `composer.json` (`font-mono`, prefijo `v`).
+  - Botón sol/luna (`w-7 h-7`) que alterna tema y persiste en `localStorage`.
+- Script al pie del body: `applyTheme()` sincroniza íconos al cargar y responde al click.
+
+**`resources/views/dashboard/dashboard.blade.php`**
+- Eliminada la fecha del header del Dashboard (ahora proviene de la barra del layout).
+
+**`composer.json`**
+- Versión actualizada a `2.9.4-2`.
+
+#### Comportamiento
+| Situación | Resultado |
+|---|---|
+| Usuario nuevo (sin preferencia guardada) | Light (default, OS ignorado) |
+| Click en el botón | Alterna y guarda en `localStorage` |
+| Recarga / nueva sesión | Recuerda la última elección sin flash |
+
+---
+
+## [2.9.4-1] - 2026-03-07
+
+### 🔧 Refactoring Tipos de Movimiento + Mejoras en Reportes de Gastos y Caja
+
+#### Tipos de Movimiento — Eliminación de jerarquía padre/hijo
+- **Migración**: elimina la columna `parent_type_id` (FK y constraint) de `movement_types`. Se suprimen los 3 tipos contenedores organizacionales (`expense`, `other`, `cash_withdrawal`) que nunca se usaban en la creación de movimientos reales.
+- **Modelo `MovementType`**: eliminadas relaciones `parent()`/`children()`, scopes `mainTypes()`/`subTypes()` y métodos `isMainType()`, `isSubType()`, `hasChildren()`, `getFullNameAttribute()`.
+- **Vista de configuración** (Tipos de Movimiento): reemplaza dos tablas separadas (principales + subcategorías) por **una sola tabla** agrupada por categoría con filas de encabezado (Sistema / Gastos / Ingresos / Retiros). Se eliminan las columnas "Subcategorías" y "Tipo Padre".
+- **Formularios crear/editar**: eliminado el campo "Tipo Padre".
+
+#### Tipo `refund` — Reclasificación
+- `refund` pasa de `category = 'main_type'` a `category = 'expense_detail'`, quedando incluido naturalmente en el Informe de Gastos sin hacks adicionales.
+- Eliminado el tipo `patient_refund` (sin uso activo; movimiento existente reclasificado a `other_expense`).
+
+#### Informe de Gastos — Correcciones y mejoras
+- **Retiros incluidos**: el informe ahora incluye los movimientos de categoría `withdrawal_detail` (Depósito Bancario, Pago de Gastos, Liquidación de Profesional, Custodia en Caja Fuerte, Otro Retiro) además de `expense_detail`.
+- **Revertido hack `orWhere('code', 'refund')`** en `ReportController`: ya no necesario tras la reclasificación de `refund`.
+- **Exportación Excel mejorada**: CSV con BOM UTF-8, separador `;` (compatible con Excel en configuración regional argentina), estructura por secciones (Resumen / Análisis por Tipo / Detalle de Gastos) y decimales con coma.
+
+#### Eliminación del botón PDF y DomPDF
+- Eliminados los botones **PDF** de "Informe de Gastos" y "Análisis de Caja"; se mantiene el botón **Imprimir** (vista de impresión del navegador, con opción de guardar como PDF desde el diálogo del browser).
+- Eliminados: métodos `exportExpensesReportPdf()` y `downloadCashReportPdf()` en los controladores, rutas asociadas, vistas blade `expenses-pdf.blade.php` y `report-pdf.blade.php`, y los imports de `Barryvdh\DomPDF`.
+
+---
+
 ## [2.9.4] - 2026-03-05
 
 ### 🖨️ Listado Diario — Sistema de impresión estándar
